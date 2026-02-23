@@ -2,6 +2,7 @@ import re
 from datetime import datetime
 import logic.catalogos as cat
 
+#TODO Mejora
 class Validador:
     """
     Clase centralizada para validaciones de formato, longitud y catálogos.
@@ -158,15 +159,12 @@ class Validador:
     @staticmethod
     def validar_estado_propietario(estado: str) -> tuple[bool, str]:
         """
-        Valida que el estado del propietario cambie estrictamente según su situación administrativa[cite: 123].
+        Valida que el estado del propietario cambie estrictamente según su situación administrativa.
         """
         if estado not in cat.ESTADOS_PROPIETARIO:
             return False, "El estado del propietario seleccionado no es válido."
         
         return True, ""
-
-
-
 
     # =========================
     # VALIDACIONES DE INFRACCIONES
@@ -185,3 +183,4 @@ class Validador:
         if tipo not in cat.TIPOS_INFRACCION:
             return False, "El tipo de infracción seleccionado no es válido."
         return True, ""
+    
