@@ -166,12 +166,15 @@ class Validador:
         
         return True, ""
 
-    # =========================
-    # VALIDACIONES DE INFRACCIONES
+# =========================
+    # VALIDACIONES DE INFRACCIONES Y AGENTES
     # =========================
 
     @staticmethod
     def validar_monto(monto: float) -> tuple[bool, str]:
+        """
+        Valida que el monto sea un número y estrictamente mayor a cero[cite: 197, 262, 354, 355].
+        """
         if not isinstance(monto, (int, float)):
             return False, "El monto de la infracción debe ser numérico."
         if monto <= 0:
@@ -180,7 +183,86 @@ class Validador:
 
     @staticmethod
     def validar_tipo_infraccion(tipo: str) -> tuple[bool, str]:
+        """
+        Valida que el tipo de infracción pertenezca al catálogo oficial[cite: 302, 371].
+        """
         if tipo not in cat.TIPOS_INFRACCION:
             return False, "El tipo de infracción seleccionado no es válido."
         return True, ""
-    
+
+    @staticmethod
+    def validar_estado_infraccion(estado: str) -> tuple[bool, str]:
+        """
+        Valida el estado de la infracción contra el catálogo cerrado[cite: 374].
+        """
+        if estado not in cat.ESTADOS_INFRACCION:
+            return False, "El estado de la infracción seleccionado no es válido."
+        return True, ""
+
+    @staticmethod
+    def validar_tipo_captura(tipo_captura: str) -> tuple[bool, str]:
+        """
+        Valida la selección del tipo de captura (ej. Fotomulta o En sitio) para 
+        determinar la obligatoriedad de los datos del conductor más adelante[cite: 259].
+        """
+        if tipo_captura not in cat.TIPOS_CAPTURA_INFRACCION:
+            return False, "El tipo de captura seleccionado no es válido."
+        return True, ""
+
+    @staticmethod
+    def validar_fecha_hora_pasada(fecha_str: str, hora_str: str) -> tuple[bool, str]:
+        """
+        Valida que la fecha y hora de la infracción tengan un formato correcto 
+        (YYYY-MM-DD y HH:MM) y no sean futuras[cite: 193, 261, 301].
+        """
+        try:
+            # Convertimos las cadenas a datetime para comparar con el momento actual
+            fecha_hora_infraccion = datetime.strptime(f"{fecha_str} {hora_str}", "%Y-%m-%d %H:%M")
+            fecha_hora_actual = datetime.now()
+            
+            if fecha_hora_infraccion > fecha_hora_actual:
+                return False, "La fecha y hora de la infracción no pueden ser en el futuro."
+                
+            return True, ""
+        except ValueError:
+            return False, "Formato de fecha u hora incorrecto. Use YYYY-MM-DD para fecha y HH:MM para hora."
+
+    @staticmethod
+    def validar_lugar_motivo(lugar: str, motivo: str) -> tuple[bool, str]:
+        """
+        Valida que el lugar y el motivo no estén vacíos, ya que son atributos 
+        estructurales obligatorios del acto administrativo[cite: 131, 133].
+        """
+        if not lugar or len(lugar.strip()) < 5:
+            return False, "El lugar de la infracción debe ser especificado claramente (mínimo 5 caracteres)."
+        
+        if not motivo or len(motivo.strip()) < 5:
+            return False, "El motivo o artículo del reglamento no puede quedar vacío (mínimo 5 caracteres)."
+            
+        return True, ""
+
+    @staticmethod
+    def validar_licencia_conductor(licencia: str) -> tuple[bool, str]:
+        """
+        Valida el formato de la licencia. Como es de carácter opcional, 
+        se permite que venga vacía.
+        """
+        if not licencia or licencia.strip() == "":
+            return True, "" # Es válido dejarla en blanco
+            
+        if len(licencia.strip()) < 5:
+            return False, "Si se proporciona, la licencia debe tener al menos 5 caracteres válidos."
+            
+        return True, ""
+
+    @staticmethod
+    def validar_id_agente(id_agente: int) -> tuple[bool, str]:
+        """
+        Valida el formato numérico del ID interno del agente emisor[cite: 153].
+        """
+        if not isinstance(id_agente, int) or isinstance(id_agente, bool):
+            return False, "El ID del agente debe ser un valor numérico entero."
+        if id_agente <= 0:
+            return False, "El ID del agente debe ser mayor a cero."
+            
+        return True, ""
