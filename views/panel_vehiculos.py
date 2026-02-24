@@ -40,54 +40,83 @@ class PanelVehiculos(QWidget):
     # PESTAÑA 1: REGISTRAR VEHÍCULO
     # ==========================================
     def construir_tab_registrar(self):
+        """Construye el formulario garantizando la integridad de los datos mediante catálogos cerrados."""
         layout = QVBoxLayout(self.tab_registrar)
-        
-        # QFormLayout es ideal para formularios: pone un Label a la izquierda y un Input a la derecha
         formulario = QFormLayout()
         
+        # 1. Entradas de texto restringidas
         self.input_vin = QLineEdit()
+        self.input_vin.setMaxLength(17) # Frontend Defensivo: Evita que escriban de más
+        self.input_vin.setPlaceholderText("Ej: 3G1SE516X3S205891")
         self.input_placa = QLineEdit()
-        self.input_marca = QLineEdit()
-        self.input_modelo = QLineEdit()
+        self.input_placa.setPlaceholderText("Ej: YYU-021-A")
+        self.input_id_propietario = QLineEdit()
+        self.input_id_propietario.setPlaceholderText("ID numérico del propietario")
         
-        # QSpinBox es para números enteros (Ideal para el año)
         self.input_anio = QSpinBox()
         self.input_anio.setRange(1900, 2030)
         self.input_anio.setValue(2024)
+        self.input_anio.setButtonSymbols(QSpinBox.PlusMinus)
+        # 2. Listas Desplegables (QComboBox) conectadas a catalogos.py
+        self.combo_marca = QComboBox()
+        # Llenamos la marca con las "llaves" de tu diccionario (Nissan, Chevrolet, etc.)
+        self.combo_marca.addItems(cat.MARCAS_MODELOS_VEHICULO.keys())
         
-        # QComboBox es una lista desplegable. Las llenamos con tus catálogos.
+        self.combo_modelo = QComboBox()
+        # Nota: No lo llenamos aquí, lo llenará la función dinámica más abajo.
+        
         self.combo_color = QComboBox()
         self.combo_color.addItems(cat.COLORES_VEHICULO)
         
         self.combo_clase = QComboBox()
         self.combo_clase.addItems(cat.CLASES_VEHICULO)
         
-        self.combo_procedencia = QComboBox()
-        self.combo_procedencia.addItems(["Nacional", "Extranjero"])
-        
-        self.input_id_propietario = QLineEdit()
-        self.input_id_propietario.setPlaceholderText("ID numérico del propietario")
+        self.combo_estado = QComboBox()
+        self.combo_estado.addItems(cat.ESTADOS_VEHICULO)
 
-        # Agregamos las filas al formulario
+        self.combo_procedencia = QComboBox()
+        self.combo_procedencia.addItems(cat.PROCEDENCIAS_VEHICULO)
+
+        # 3. CONEXIÓN DINÁMICA (Menú en Cascada)
+        # Cuando el usuario cambie la marca, se ejecuta self.actualizar_modelos
+        self.combo_marca.currentTextChanged.connect(self.actualizar_modelos)
+        
+        # Forzamos una primera actualización manual para que el modelo no empiece vacío al abrir el programa
+        self.actualizar_modelos(self.combo_marca.currentText())
+
+        # 4. Ensamblaje del Formulario
         formulario.addRow("VIN (17 caracteres):", self.input_vin)
         formulario.addRow("Placa:", self.input_placa)
-        formulario.addRow("Marca:", self.input_marca)
-        formulario.addRow("Modelo:", self.input_modelo)
+        formulario.addRow("Marca:", self.combo_marca)
+        formulario.addRow("Modelo:", self.combo_modelo)
         formulario.addRow("Año:", self.input_anio)
         formulario.addRow("Color:", self.combo_color)
         formulario.addRow("Clase:", self.combo_clase)
+        formulario.addRow("Estado Legal:", self.combo_estado)
         formulario.addRow("Procedencia:", self.combo_procedencia)
         formulario.addRow("ID Propietario:", self.input_id_propietario)
 
         layout.addLayout(formulario)
 
-        # Botón de guardado
+        # Botón de Guardado
         self.btn_guardar = QPushButton("Guardar Vehículo")
         self.btn_guardar.setStyleSheet("background-color: #27ae60; color: white; font-weight: bold; padding: 10px;")
-        # self.btn_guardar.clicked.connect(self.logica_guardar) # Se conectará después
-        
         layout.addWidget(self.btn_guardar, alignment=Qt.AlignRight)
 
+    # ==========================================
+    # MÉTODO AUXILIAR PARA LA INTERFAZ
+    # ==========================================
+    def actualizar_modelos(self, marca_seleccionada):
+        """
+        Slot que se dispara al cambiar la marca. 
+        Limpia el QComboBox de modelos y lo rellena con la lista correspondiente.
+        """
+        self.combo_modelo.clear() # Borra los modelos de la marca anterior
+        
+        # Busca la marca en el diccionario y agrega su lista de modelos
+        if marca_seleccionada in cat.MARCAS_MODELOS_VEHICULO:
+            modelos_permitidos = cat.MARCAS_MODELOS_VEHICULO[marca_seleccionada]
+            self.combo_modelo.addItems(modelos_permitidos)
     # ==========================================
     # PESTAÑA 2: MODIFICAR VEHÍCULO
     # ==========================================
