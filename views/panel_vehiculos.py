@@ -57,19 +57,19 @@ class PanelVehiculos(QWidget):
         self.input_anio.setRange(1900, 2030)
         self.input_anio.setValue(2024)
         self.input_anio.setButtonSymbols(QSpinBox.PlusMinus)
+        
         # 2. Listas Desplegables (QComboBox) conectadas a catalogos.py
         self.combo_marca = QComboBox()
-        # Llenamos la marca con las "llaves" de tu diccionario (Nissan, Chevrolet, etc.)
         self.combo_marca.addItems(cat.MARCAS_MODELOS_VEHICULO.keys())
         
         self.combo_modelo = QComboBox()
-        # Nota: No lo llenamos aquí, lo llenará la función dinámica más abajo.
         
         self.combo_color = QComboBox()
         self.combo_color.addItems(cat.COLORES_VEHICULO)
         
         self.combo_clase = QComboBox()
-        self.combo_clase.addItems(cat.CLASES_VEHICULO)
+        # Nota: Ya NO llenamos la clase aquí con cat.CLASES_VEHICULO. 
+        # La clase se llenará sola dependiendo del modelo.
         
         self.combo_estado = QComboBox()
         self.combo_estado.addItems(cat.ESTADOS_VEHICULO)
@@ -77,10 +77,16 @@ class PanelVehiculos(QWidget):
         self.combo_procedencia = QComboBox()
         self.combo_procedencia.addItems(cat.PROCEDENCIAS_VEHICULO)
 
-        # 3. CONEXIÓN DINÁMICA (Menú en Cascada)
-        # Cuando el usuario cambie la marca, se ejecuta self.actualizar_modelos
+        # 3. CONEXIÓN DINÁMICA (Cascada Doble)
+        # Primera cascada: Al cambiar Marca -> Actualiza Modelos
         self.combo_marca.currentTextChanged.connect(self.actualizar_modelos)
         
+        # Segunda cascada: Al cambiar Modelo -> Actualiza Clases
+        self.combo_modelo.currentTextChanged.connect(self.actualizar_clases)
+        
+        # Forzamos la primera actualización para arrancar con datos
+        self.actualizar_modelos(self.combo_marca.currentText())
+
         # Forzamos una primera actualización manual para que el modelo no empiece vacío al abrir el programa
         self.actualizar_modelos(self.combo_marca.currentText())
 
@@ -104,19 +110,36 @@ class PanelVehiculos(QWidget):
         layout.addWidget(self.btn_guardar, alignment=Qt.AlignRight)
 
     # ==========================================
-    # MÉTODO AUXILIAR PARA LA INTERFAZ
+    # MÉTODOS AUXILIARES PARA LA INTERFAZ
     # ==========================================
     def actualizar_modelos(self, marca_seleccionada):
-        """
-        Slot que se dispara al cambiar la marca. 
-        Limpia el QComboBox de modelos y lo rellena con la lista correspondiente.
-        """
-        self.combo_modelo.clear() # Borra los modelos de la marca anterior
+        """Primera cascada: Llena los modelos basados en la marca."""
+        self.combo_modelo.clear() 
         
-        # Busca la marca en el diccionario y agrega su lista de modelos
         if marca_seleccionada in cat.MARCAS_MODELOS_VEHICULO:
-            modelos_permitidos = cat.MARCAS_MODELOS_VEHICULO[marca_seleccionada]
+            # Ahora extraemos solo las llaves (los nombres de los modelos)
+            modelos_permitidos = list(cat.MARCAS_MODELOS_VEHICULO[marca_seleccionada].keys())
             self.combo_modelo.addItems(modelos_permitidos)
+    
+    def actualizar_clases(self, modelo_seleccionado):
+        """Segunda cascada: Llena las clases y bloquea el campo si solo hay una opción."""
+        self.combo_clase.clear()
+        
+        marca_actual = self.combo_marca.currentText()
+        
+        # Verificamos que la marca y el modelo existan en el catálogo
+        if marca_actual in cat.MARCAS_MODELOS_VEHICULO and modelo_seleccionado in cat.MARCAS_MODELOS_VEHICULO[marca_actual]:
+            
+            # Traemos la lista de clases permitidas (ej. ["Sedán", "Hatchback"] o solo ["Sedán"])
+            clases_permitidas = cat.MARCAS_MODELOS_VEHICULO[marca_actual][modelo_seleccionado]
+            self.combo_clase.addItems(clases_permitidas)
+            
+            # Frontend Defensivo: Si solo hay una clase, bloqueamos el menú para evitar errores
+            if len(clases_permitidas) == 1:
+                self.combo_clase.setEnabled(False) # Se pone gris y no se puede cambiar
+            else:
+                self.combo_clase.setEnabled(True)  # Se habilita para que el operador elija
+    
     # ==========================================
     # PESTAÑA 2: MODIFICAR VEHÍCULO
     # ==========================================
