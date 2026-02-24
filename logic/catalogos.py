@@ -26,7 +26,8 @@ CLASES_VEHICULO = [
     "Motocicleta",
     "Camión",
     "Camioneta",
-    "Autobús"
+    "Autobús",
+    "Hatchback"
 ]
 
 PROCEDENCIAS_VEHICULO = [
@@ -35,23 +36,68 @@ PROCEDENCIAS_VEHICULO = [
 ]
 
 # =========================
-# MARCAS Y MODELOS (Estructura Jerárquica)
+# MARCAS, MODELOS Y SUS CLASES PERMITIDAS (Cascada Doble)
 # =========================
-# Diccionario donde la clave es la Marca y el valor es una lista de Modelos permitidos.
-# Esto asegura que no haya entrada libre en estos campos y facilita los menús dinámicos.
-#PENDIENTE A MEJORAR Y AGREGAR MÁS MODELOS Y MARCAS REALES
-MARCAS_MODELOS_VEHICULO = {
-    "Nissan": ["Versa", "Sentra", "March", "Tsuru", "Altima", "Kicks", "Frontier", "NP300"],
-    "Chevrolet": ["Aveo", "Chevy", "Beat", "Spark", "Onix", "Trax", "Silverado", "Colorado"],
-    "Volkswagen": ["Jetta", "Vento", "Gol", "Polo", "Virtus", "Tiguan", "Saveiro", "Taos"],
-    "Toyota": ["Corolla", "Yaris", "Camry", "Prius", "RAV4", "Hilux", "Tacoma", "Avanza"],
-    "Honda": ["Civic", "City", "Accord", "CR-V", "HR-V", "BR-V"],
-    "Ford": ["Figo", "Fiesta", "Focus", "Mustang", "Escape", "Ranger", "F-150", "Explorer"],
-    "Mazda": ["Mazda 2", "Mazda 3", "Mazda 6", "CX-3", "CX-5", "CX-30"],
-    "Kia": ["Rio", "Forte", "Soul", "Seltos", "Sportage", "Sorento"],
-    "Hyundai": ["Grand i10", "Accent", "Elantra", "Tucson", "Creta"]
-}
+# Diccionario donde la clave es la Marca y el valor es otro diccionario.
+# Cada Modelo contiene una LISTA con las clases en las que se fabrica.
 
+#TODO MEJORAR porque por ejemplo puedo poner un aveo hatchback que no existe realmente
+MARCAS_MODELOS_VEHICULO = {
+    "Nissan": {
+        "Versa": ["Sedán"], "Sentra": ["Sedán"], "March": ["Hatchback"], 
+        "Tsuru": ["Sedán"], "Altima": ["Sedán"], "Kicks": ["Camioneta"], 
+        "Frontier": ["Camioneta"], "NP300": ["Camioneta"]
+    },
+    "Chevrolet": {
+        "Aveo": ["Sedán", "Hatchback"], "Chevy": ["Sedán", "Hatchback"], 
+        "Beat": ["Sedán", "Hatchback"], "Spark": ["Hatchback"], 
+        "Onix": ["Sedán"], "Trax": ["Camioneta"], 
+        "Silverado": ["Camioneta"], "Colorado": ["Camioneta"]
+    },
+    "Volkswagen": {
+        "Jetta": ["Sedán"], "Vento": ["Sedán"], "Gol": ["Hatchback"], 
+        "Polo": ["Hatchback"], "Virtus": ["Sedán"], "Tiguan": ["Camioneta"], 
+        "Saveiro": ["Camioneta"], "Taos": ["Camioneta"]
+    },
+    "Toyota": {
+        "Corolla": ["Sedán"], "Yaris": ["Sedán", "Hatchback"], "Camry": ["Sedán"], 
+        "Prius": ["Sedán", "Hatchback"], "RAV4": ["Camioneta"], 
+        "Hilux": ["Camioneta"], "Tacoma": ["Camioneta"], "Avanza": ["Camioneta"]
+    },
+    "Honda": {
+        "Civic": ["Sedán", "Hatchback"], "City": ["Sedán", "Hatchback"], 
+        "Accord": ["Sedán"], "CR-V": ["Camioneta"], 
+        "HR-V": ["Camioneta"], "BR-V": ["Camioneta"]
+    },
+    "Ford": {
+        "Figo": ["Sedán", "Hatchback"], "Fiesta": ["Sedán", "Hatchback"], 
+        "Focus": ["Sedán", "Hatchback"], "Mustang": ["Sedán"], 
+        "Escape": ["Camioneta"], "Ranger": ["Camioneta"], 
+        "F-150": ["Camioneta"], "Explorer": ["Camioneta"]
+    },
+    "Mazda": {
+        "Mazda 2": ["Sedán", "Hatchback"], "Mazda 3": ["Sedán", "Hatchback"], 
+        "Mazda 6": ["Sedán"], "CX-3": ["Camioneta"], 
+        "CX-5": ["Camioneta"], "CX-30": ["Camioneta"]
+    },
+    "Kia": {
+        "Rio": ["Sedán", "Hatchback"], "Forte": ["Sedán", "Hatchback"], 
+        "Soul": ["Camioneta"], "Seltos": ["Camioneta"], 
+        "Sportage": ["Camioneta"], "Sorento": ["Camioneta"]
+    },
+    "Hyundai": {
+        "Grand i10": ["Sedán", "Hatchback"], "Accent": ["Sedán", "Hatchback"], 
+        "Elantra": ["Sedán"], "Tucson": ["Camioneta"], "Creta": ["Camioneta"]
+    },
+    "Yamaha": {
+        "FZ25": ["Motocicleta"], "MT-07": ["Motocicleta"], 
+        "R6": ["Motocicleta"], "Crypton": ["Motocicleta"]
+    },
+    "Mercedes-Benz": {
+        "Sprinter": ["Camioneta"], "Clase C": ["Sedán"], 
+        "Actros": ["Camión"], "Marcopolo": ["Autobús"]
+    }
+}
 # =========================
 # COLORES DE VEHÍCULO
 # =========================
