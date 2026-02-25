@@ -23,7 +23,6 @@ class GestorVehiculos:
         valido, msj = Validador.validar_estado_vehiculo(vehiculo.estado_legal)
         if not valido: return False, msj
         
-        # Asumiendo que agregaste un validador para procedencia en validador.py
         valido, msj = Validador.validar_procedencia_vehiculo(vehiculo.procedencia)
         if not valido: return False, msj
 
@@ -69,6 +68,49 @@ class GestorVehiculos:
             return False, f"Error inesperado al registrar vehículo: {str(e)}"
         finally:
             conexion.close()
+
+    @staticmethod
+    def buscar_vehiculo_por_vin(vin: str) -> tuple[bool, str | dict]:
+        """
+        Busca un vehículo por su VIN y retorna todos sus datos para mostrarlos en la interfaz.
+        """
+        try:
+            # --- AQUÍ USAMOS TU FUNCIÓN OFICIAL ---
+            conexion = obtener_conexion()
+            cursor = conexion.cursor()
+            
+            # Ahora traemos toda la fila
+            cursor.execute('''
+                SELECT placa, marca, modelo, anio, color, clase, estado_legal, procedencia, id_propietario 
+                FROM vehiculos 
+                WHERE vin = ?
+            ''', (vin,))
+            
+            resultado = cursor.fetchone()
+            
+            if resultado:
+                # Empaquetamos todo el vehículo
+                datos_vehiculo = {
+                    "placa": resultado[0],
+                    "marca": resultado[1],
+                    "modelo": resultado[2],
+                    "anio": resultado[3],
+                    "color": resultado[4],
+                    "clase": resultado[5],
+                    "estado_legal": resultado[6],
+                    "procedencia": resultado[7],
+                    "id_propietario": resultado[8]
+                }
+                return True, datos_vehiculo
+            else:
+                return False, "No se encontró ningún vehículo registrado con ese VIN."
+                
+        except Exception as e:
+            return False, f"Error al buscar en la base de datos: {str(e)}"
+        finally:
+            if 'conexion' in locals():
+                conexion.close()
+
 
     @staticmethod
     def modificar_vehiculo(vin, nueva_placa, nuevo_color, nuevo_estado_legal):
