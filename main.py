@@ -3,6 +3,7 @@ from PySide6.QtWidgets import QApplication
 
 # 1. Importamos la ventana principal directamente
 from views.principal import VentanaPrincipal
+import views.estilos as estilos
 # from views.login import VentanaLogin # <-- Lo silenciamos temporalmente
 
 # ==========================================
@@ -29,7 +30,7 @@ def main():
     # --- MODO PRODUCCIÓN (Silenciado por ahora) ---
     # ventana_login = VentanaLogin()
     # ventana_login.show()
-
+    app.setStyleSheet(estilos.TEMA_OSCURO)
     # --- MODO DESARROLLO RÁPIDO ---
     # Creamos nuestro gafete VIP y abrimos la app directamente
     gafete_vip = UsuarioPrueba()
