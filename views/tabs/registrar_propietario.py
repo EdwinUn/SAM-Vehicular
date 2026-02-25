@@ -1,0 +1,2 @@
+class TabRegistrarPropietario:
+    pass

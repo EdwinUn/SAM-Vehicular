@@ -1,0 +1,2 @@
+class TabModificarPropietario:
+    pass
