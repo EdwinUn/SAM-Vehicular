@@ -57,10 +57,12 @@ class TabModificarVehiculo(QWidget):
         # --- CAMPO PROPIETARIO (Lectura + Botón) ---
         self.mod_id_propietario = QLineEdit()
         self.mod_id_propietario.setReadOnly(True)
-
+        
         self.btn_cambiar_propietario = QPushButton("Cambio de Propietario")
+        self.btn_cambiar_propietario.setStyleSheet("background-color: #9b59b6; color: white; font-weight: bold;")
         self.btn_cambiar_propietario.clicked.connect(self.abrir_ventana_cambio_propietario)
-
+        
+        
         layout_propietario = QHBoxLayout()
         layout_propietario.addWidget(self.mod_id_propietario)
         layout_propietario.addWidget(self.btn_cambiar_propietario)
@@ -80,9 +82,15 @@ class TabModificarVehiculo(QWidget):
         # --- CAMPOS EDITABLES ---
         self.mod_color = QComboBox()
         self.mod_color.addItems(cat.COLORES_VEHICULO)
+        self.mod_color.setPlaceholderText("Seleccione un color...") # Texto fantasma
+        self.mod_color.addItems(cat.COLORES_VEHICULO)
+        self.mod_color.setCurrentIndex(-1) # Forzamos a que empiece en blanco
         
         self.mod_estado = QComboBox()
         self.mod_estado.addItems(cat.ESTADOS_VEHICULO) 
+        self.mod_estado.setPlaceholderText("Seleccione un estado...")
+        self.mod_estado.addItems(cat.ESTADOS_VEHICULO) 
+        self.mod_estado.setCurrentIndex(-1) # Forzamos a que empiece en blanco
 
         # --- ENSAMBLAJE DEL FORMULARIO ---
         formulario.addRow("Marca:", self.mod_marca)
@@ -203,8 +211,8 @@ class TabModificarVehiculo(QWidget):
         self.mod_clase.clear()
         self.mod_id_propietario.clear()
         
-        self.mod_color.setCurrentIndex(0)
-        self.mod_estado.setCurrentIndex(0)
+        self.mod_color.setCurrentIndex(-1)
+        self.mod_estado.setCurrentIndex(-1)
         
     def procesar_actualizacion(self):
         """Captura los datos permitidos y los envía al backend para actualizar."""
