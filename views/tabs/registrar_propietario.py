@@ -3,10 +3,9 @@ QLineEdit, QPushButton, QComboBox, QMessageBox)
 from PySide6.QtCore import Qt, QRegularExpression
 from PySide6.QtGui import QRegularExpressionValidator
 
-# Importaremos esto cuando hagamos el backend
-# from models.propietario import Propietario
-# from logic.gestor_propietarios import GestorPropietarios
-
+# Importamos el backend real
+from models.propietario import Propietario
+from logic.gestor_propietarios import GestorPropietarios
 class TabRegistrarPropietario(QWidget):
     def __init__(self, usuario_actual):
         super().__init__()
@@ -97,26 +96,26 @@ class TabRegistrarPropietario(QWidget):
             QMessageBox.warning(self, "Correo Inválido", "Por favor ingrese un correo electrónico válido.")
             return
 
-        # 4. Empaquetado y envío al backend (COMENTADO HASTA CREAR EL GESTOR)
-        """
-        # Cambiar correo=correo por correo_electronico=correo
+        # 4. Empaquetado y envío al backend
         nuevo_propietario = Propietario(
-            nombre_completo=nombre, curp=curp, direccion=direccion,
-            telefono=telefono, correo_electronico=correo, estado_licencia=licencia
+            nombre_completo=nombre, 
+            curp=curp, 
+            direccion=direccion,
+            telefono=telefono, 
+            correo_electronico=correo, 
+            estado_licencia=licencia,
+            estado="Activo"  # El propietario nace como Activo
         )
         
+        # Llamamos al gestor
         exito, mensaje = GestorPropietarios.registrar_propietario(nuevo_propietario)
         
         if exito:
             QMessageBox.information(self, "Éxito", mensaje)
             self.limpiar_formulario()
         else:
-            QMessageBox.critical(self, "Error", mensaje)
-        """
-        
-        # Para probar la interfaz hoy:
-        QMessageBox.information(self, "Simulación", f"Todo correcto. Listo para guardar a:\n{nombre}\nCURP: {curp}")
-        self.limpiar_formulario()
+            # Si la CURP se repite o falla algo, el gestor nos mandará el mensaje de error [cite: 140, 437-440]
+            QMessageBox.critical(self, "Error al Guardar", mensaje)
 
     def limpiar_formulario(self):
         self.input_nombre.clear()

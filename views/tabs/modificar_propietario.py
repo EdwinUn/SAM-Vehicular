@@ -170,7 +170,7 @@ class TabModificarPropietario(QWidget):
         
         # Extraemos el ID numérico que el backend exige
         texto_id = self.mod_id.text().replace("PRP-", "")
-        id_objetivo = int(self.mod_id.text())
+        id_objetivo = int(texto_id)
 
         # Validaciones básicas antes de enviar
         if not direccion or not telefono:
