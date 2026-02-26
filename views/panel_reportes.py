@@ -31,7 +31,7 @@ class PanelReportes(QWidget):
         # Agregamos exactamente los 6 reportes que exige tu manual de requerimientos
         layout_controles.addWidget(QLabel("Seleccionar Reporte:"))
         self.combo_reportes = QComboBox()
-        self.combo_reportes.addItem("Seleccione un reporte...", None)
+        self.combo_reportes.addItem(" ", None)
 
         # === APLICACIÓN DE ROLES (RBAC) ===
         rol = self.usuario_actual.rol
