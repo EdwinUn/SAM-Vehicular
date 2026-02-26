@@ -1,42 +1,43 @@
 import sys
-from PySide6.QtWidgets import QApplication
-# 1. Importamos la ventana principal directamente
-from views.principal import VentanaPrincipal
+import os
+from PySide6.QtWidgets import QApplication, QMessageBox
 import views.estilos as estilos
+# 1. Asegurar que Python encuentre todos tus módulos
+ruta_raiz = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(ruta_raiz)
 
-# from views.login import VentanaLogin # <-- Lo silenciamos temporalmente
+# 2. Importaciones de tu proyecto
+from database.inicializar_db import crear_tablas
+from views.login import VentanaLogin
 
-# ==========================================
-# TRUCO DE DESARROLLO (MOCK USER)
-# ==========================================
-class UsuarioPrueba:
-    """Un gafete falso para entrar directo al sistema sin loguearse."""
-    def __init__(self):
-        self.id_usuario = 1
-        self.nombre_usuario = "Admin de Pruebas"
-        self.rol = "Administrador" # <- Si quieren cambiar el rol solo cambian esta string por otro rol disponible
-    """
-    Estos son los roles disponibles:
-    ROLES_USUARIO = [
-    "Administrador",
-    "Operador Administrativo",
-    "Agente de Tránsito",
-    "Supervisor"
-]
-    """
+def verificar_entorno():
+    """Verifica que la base de datos exista. Si no, la crea."""
+    try:
+        # Esto asegura que el archivo .db se cree con todas las tablas [cite: 497-498]
+        crear_tablas()
+        return True
+    except Exception as e:
+        print(f"Error crítico al inicializar la base de datos: {e}")
+        return False
+
 def main():
+    # Creamos la instancia de la aplicación
     app = QApplication(sys.argv)
-
-    # --- MODO PRODUCCIÓN (Silenciado por ahora) ---
-    # ventana_login = VentanaLogin()
-    # ventana_login.show()
+    
+    # Aplicamos un estilo visual
     app.setStyleSheet(estilos.TEMA_OSCURO)
-    # --- MODO DESARROLLO RÁPIDO ---
-    # Creamos nuestro gafete VIP y abrimos la app directamente
-    gafete_vip = UsuarioPrueba()
-    ventana_principal = VentanaPrincipal(gafete_vip)
-    ventana_principal.show()
 
+    # Verificamos si la base de datos está lista
+    if not verificar_entorno():
+        QMessageBox.critical(None, "Error de Sistema", 
+                            "No se pudo inicializar la base de datos. Verifique los permisos de carpeta.")
+        sys.exit(1)
+
+    # 3. Lanzamos el punto de entrada: El Login [cite: 603, 606]
+    login = VentanaLogin()
+    login.show()
+
+    # Ejecutamos el bucle de la aplicación
     sys.exit(app.exec())
 
 if __name__ == "__main__":
