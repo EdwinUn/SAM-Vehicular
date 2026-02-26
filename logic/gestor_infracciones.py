@@ -34,11 +34,7 @@ class GestorInfracciones:
         valido, msj = Validador.validar_licencia_conductor(infraccion.licencia_conductor)
         if not valido: return False, msj
 
-        
-        # TODO: Refactorizar 'En sitio' y 'Fotomulta' a constantes en catalogos.py 
-        # para evitar el uso de cadenas de texto (hardcoding) en la lógica de negocio.
         # 2. Regla de negocio: Obligatoriedad de la licencia
-        # Si la captura es "En sitio", asumimos que se debe registrar quién iba conduciendo.
         if tipo_captura == "En sitio" and (not infraccion.licencia_conductor or infraccion.licencia_conductor.strip() == ""):
             return False, "Error: Para infracciones de tipo 'En sitio', el número de licencia del conductor es obligatorio."
 
@@ -47,7 +43,6 @@ class GestorInfracciones:
         
         try:
             # 3. Regla de negocio: El vehículo debe existir
-            # CORRECCIÓN AQUÍ 1: Le agregamos la coma al final (infraccion.vin_infractor,) para que Python lo lea como tupla
             cursor.execute("SELECT vin FROM vehiculos WHERE vin = ?", (infraccion.vin_infractor,))
             if not cursor.fetchone():
                 return False, "Error: El vehículo asociado (VIN) no existe en el sistema."
@@ -68,7 +63,6 @@ class GestorInfracciones:
             # 6. Guardar en la base de datos
             estado_inicial = "Pendiente"
 
-            # CORRECCIÓN AQUÍ 2: Cambiamos 'vin' por 'vin_infractor' en la consulta SQL y en la variable de Python
             cursor.execute('''
                 INSERT INTO infracciones (folio, fecha, hora, lugar, tipo_infraccion, motivo, monto, estado, vin_infractor, id_agente, licencia_conductor)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -118,11 +112,10 @@ class GestorInfracciones:
                 return False, "Error: No se puede marcar como 'Pagada' una infracción que ya ha sido 'Cancelada'."
 
             # Regla: El estado podrá cambiar de Pendiente a Pagada o Cancelada.
-            # Bloqueamos cualquier cambio si la infracción ya fue Pagada.
             if estado_actual == "Pagada":
                 return False, "Error: La infracción ya se encuentra 'Pagada' y su estado es definitivo."
 
-            # 4. Ejecutar la actualización en la base de datos [cite: 198]
+            # 4. Ejecutar la actualización en la base de datos
             cursor.execute('''
                 UPDATE infracciones 
                 SET estado = ?
@@ -136,3 +129,33 @@ class GestorInfracciones:
             return False, f"Error inesperado al cambiar el estado de la infracción: {str(e)}"
         finally:
             conexion.close()
+
+    # ==========================================
+    # NUEVO MÉTODO AÑADIDO: BUSCADOR POR PLACA
+    # ==========================================
+    @staticmethod
+    def obtener_infracciones_por_vehiculo(criterio: str):
+        """
+        Busca todas las infracciones asociadas a un vehículo, ya sea por su Placa o su VIN.
+        Hace un cruce (JOIN) con la tabla de vehículos para identificar la placa.
+        """
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        
+        try:
+            cursor.execute('''
+                SELECT i.folio, i.fecha, i.tipo_infraccion, i.monto, i.estado
+                FROM infracciones i
+                JOIN vehiculos v ON i.vin_infractor = v.vin
+                WHERE v.placa = ? OR v.vin = ?
+                ORDER BY i.fecha DESC
+            ''', (criterio, criterio))
+            
+            resultados = cursor.fetchall()
+            return True, resultados
+            
+        except Exception as e:
+            return False, f"Error al buscar infracciones: {str(e)}"
+        finally:
+            if 'conexion' in locals():
+                conexion.close()
