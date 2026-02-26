@@ -36,27 +36,34 @@ class TabRegistrarVehiculo(QWidget):
         self.input_id_propietario.setPlaceholderText("ID numérico del propietario")
         
         self.input_anio = QSpinBox()
-        self.input_anio.setRange(1900, 2030)
-        self.input_anio.setValue(2024)
+        self.input_anio.setRange(1899, 2030)
+        self.input_anio.setSpecialValueText(" ")
+        self.input_anio.setValue(1899)
         self.input_anio.setButtonSymbols(QSpinBox.PlusMinus)
         
         # 2. Listas Desplegables (QComboBox) conectadas a catalogos.py
         self.combo_marca = QComboBox()
-        self.combo_marca.addItems(cat.MARCAS_MODELOS_VEHICULO.keys())
+        self.combo_marca.addItems(cat.MARCAS_MODELOS_VEHICULO.keys())    
+        self.combo_marca.setCurrentIndex(-1) 
         
         self.combo_modelo = QComboBox()
+        self.combo_modelo.setCurrentIndex(-1) 
         
         self.combo_color = QComboBox()
         self.combo_color.addItems(cat.COLORES_VEHICULO)
+        self.combo_color.setCurrentIndex(-1) 
         
         self.combo_clase = QComboBox()
+        self.combo_clase.setCurrentIndex(-1) 
         
         self.combo_estado = QComboBox()
         self.combo_estado.addItems(cat.ESTADOS_VEHICULO)
-
+        self.combo_estado.setCurrentIndex(-1)
+        
         self.combo_procedencia = QComboBox()
         self.combo_procedencia.addItems(cat.PROCEDENCIAS_VEHICULO)
-
+        self.combo_procedencia.setCurrentIndex(-1) 
+        
         # 3. CONEXIÓN DINÁMICA (Cascada Doble)
         self.combo_marca.currentTextChanged.connect(self.actualizar_modelos)
         self.combo_modelo.currentTextChanged.connect(self.actualizar_clases)
