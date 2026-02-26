@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-QLineEdit, QPushButton, QComboBox, QFormLayout, QMessageBox, QDialog)
+QLineEdit, QPushButton, QComboBox, QFormLayout, QMessageBox, QInputDialog)
 from PySide6.QtCore import Qt
 
 # Importaciones del backend
@@ -118,59 +118,40 @@ class TabModificarVehiculo(QWidget):
     # MÉTODOS DE VENTANAS EMERGENTES (Trámites)
     # ==========================================
     def abrir_ventana_reemplacamiento(self):
-        """Abre una ventana modal (pop-up) para el trámite de cambio de placas."""
-        dialogo = QDialog(self)
-        dialogo.setWindowTitle("Trámite de Reemplacamiento")
-        dialogo.setFixedSize(450, 200) 
+        """Ejecuta el trámite de cambio de placa pidiendo el nuevo dato."""
+        vin = self.input_buscar_vin.text().strip().upper()
         
-        layout = QVBoxLayout(dialogo)
+        # Pedimos la nueva placa mediante un diálogo simple
+        nueva_placa, ok = QInputDialog.getText(
+            self, "Trámite de Reemplacamiento", 
+            f"Ingrese la nueva placa para el vehículo (VIN: {vin}):"
+        )
         
-        mensaje = QLabel("🚧 Módulo de Reemplacamiento en Desarrollo 🚧")
-        mensaje.setAlignment(Qt.AlignCenter)
-        mensaje.setStyleSheet("font-size: 18px; color: #e67e22; font-weight: bold;")
-        
-        sub_mensaje = QLabel("Próximamente:\nHistorial de placas, pagos de derechos\ny asignación de nuevos metales.")
-        sub_mensaje.setAlignment(Qt.AlignCenter)
-        sub_mensaje.setStyleSheet("font-size: 14px; color: #7f8c8d;")
-        
-        btn_cerrar = QPushButton("Entendido")
-        btn_cerrar.clicked.connect(dialogo.accept) 
-        
-        layout.addStretch()
-        layout.addWidget(mensaje)
-        layout.addWidget(sub_mensaje)
-        layout.addStretch()
-        layout.addWidget(btn_cerrar, alignment=Qt.AlignCenter)
-        
-        dialogo.exec()
-    
-    def abrir_ventana_cambio_propietario(self):
-        """Abre una ventana modal para el trámite de cambio de propietario (compra-venta)."""
-        dialogo = QDialog(self)
-        dialogo.setWindowTitle("Trámite de Cambio de Propietario")
-        dialogo.setFixedSize(450, 200) 
-        
-        layout = QVBoxLayout(dialogo)
-        
-        mensaje = QLabel("🚧 Módulo de Cambio de Propietario en Desarrollo 🚧")
-        mensaje.setAlignment(Qt.AlignCenter)
-        mensaje.setStyleSheet("font-size: 18px; color: #8e44ad; font-weight: bold;")
-        
-        sub_mensaje = QLabel("Próximamente:\nHistorial de compra-venta, validación de no adeudos\ny transferencia de responsabilidades legales.")
-        sub_mensaje.setAlignment(Qt.AlignCenter)
-        sub_mensaje.setStyleSheet("font-size: 14px; color: #7f8c8d;")
-        
-        btn_cerrar = QPushButton("Entendido")
-        btn_cerrar.clicked.connect(dialogo.accept) 
-        
-        layout.addStretch()
-        layout.addWidget(mensaje)
-        layout.addWidget(sub_mensaje)
-        layout.addStretch()
-        layout.addWidget(btn_cerrar, alignment=Qt.AlignCenter)
-        
-        dialogo.exec()
+        if ok and nueva_placa.strip():
+            exito, msj = GestorVehiculos.realizar_reemplacamiento(vin, nueva_placa.strip().upper())
+            if exito:
+                QMessageBox.information(self, "Éxito", msj)
+                self.mod_placa.setText(nueva_placa.strip().upper()) # Actualizamos la vista
+            else:
+                QMessageBox.warning(self, "Trámite Denegado", msj)
 
+    def abrir_ventana_cambio_propietario(self):
+        """Ejecuta la transferencia de propiedad pidiendo el ID del nuevo dueño."""
+        vin = self.input_buscar_vin.text().strip().upper()
+        
+        id_nuevo, ok = QInputDialog.getInt(
+            self, "Cambio de Propietario", 
+            "Ingrese el ID del nuevo propietario registrado:",
+        )
+        
+        if ok:
+            exito, msj = GestorVehiculos.transferir_propiedad(vin, id_nuevo)
+            if exito:
+                QMessageBox.information(self, "Éxito", msj)
+                # Actualizamos el campo visual con el formato PRP-00000
+                self.mod_id_propietario.setText(f"PRP-{id_nuevo:05d}")
+            else:
+                QMessageBox.warning(self, "Trámite Denegado", msj)
     # ==========================================
     # MÉTODOS LÓGICOS (Búsqueda)
     # ==========================================

@@ -202,3 +202,52 @@ class GestorVehiculos:
             return False, f"Error inesperado al modificar vehículo: {str(e)}"
         finally:
             conexion.close()
+            
+    @staticmethod
+    def tiene_multas_pendientes(vin):
+        """Verifica si el vehículo tiene deudas. Regla de negocio [4.2.vii]"""
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        cursor.execute("SELECT COUNT(*) FROM infracciones WHERE vin_infractor = ? AND estado = 'Pendiente'", (vin,))
+        resultado = cursor.fetchone()[0]
+        conexion.close()
+        return resultado > 0
+
+    @staticmethod
+    def realizar_reemplacamiento(vin, nueva_placa):
+        """Actualiza la placa validando unicidad y multas."""
+        if GestorVehiculos.tiene_multas_pendientes(vin):
+            return False, "Trámite Bloqueado: El vehículo tiene infracciones pendientes de pago."
+        
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        try:
+            cursor.execute("UPDATE vehiculos SET placa = ? WHERE vin = ?", (nueva_placa, vin))
+            conexion.commit()
+            return True, "Reemplacamiento exitoso."
+        except sqlite3.IntegrityError:
+            return False, "Error: La placa ya está registrada en otro vehículo activo."
+        finally:
+            conexion.close()
+
+    @staticmethod
+    def transferir_propiedad(vin, id_nuevo_propietario):
+        """Cambia el dueño validando existencia, estado y multas."""
+        if GestorVehiculos.tiene_multas_pendientes(vin):
+            return False, "Trámite Bloqueado: No se puede transferir un vehículo con multas pendientes."
+        
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+        try:
+            # Validar que el nuevo propietario existe y está activo [4.3.vi]
+            cursor.execute("SELECT estado FROM propietarios WHERE id_propietario = ?", (id_nuevo_propietario,))
+            propietario = cursor.fetchone()
+            
+            if not propietario or propietario[0] != "Activo":
+                return False, "Error: El propietario destino no existe o está inactivo."
+
+            cursor.execute("UPDATE vehiculos SET id_propietario = ? WHERE vin = ?", (id_nuevo_propietario, vin))
+            conexion.commit()
+            return True, "Transferencia de propiedad realizada correctamente."
+        finally:
+            conexion.close()
