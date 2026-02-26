@@ -120,3 +120,50 @@ class GestorPropietarios:
             return False, f"Error inesperado al modificar propietario: {str(e)}"
         finally:
             conexion.close()
+            
+    @staticmethod
+    def buscar_propietario_por_curp(curp):
+        """
+        Busca un propietario en la base de datos utilizando su CURP.
+        Retorna (True, diccionario_con_datos) si lo encuentra, 
+        o (False, mensaje_error) si no existe.
+        """
+        # 1. Validamos que el formato de la CURP que nos mandan sea correcto
+        valido, msj = Validador.validar_curp(curp)
+        if not valido:
+            return False, msj
+
+        conexion = obtener_conexion()
+        cursor = conexion.cursor()
+
+        try:
+            # 2. Buscamos en la base de datos
+            cursor.execute('''
+                SELECT id_propietario, nombre_completo, curp, direccion, 
+                telefono, correo_electronico, estado_licencia, estado
+                FROM propietarios 
+                WHERE curp = ?
+            ''', (curp,))
+            
+            fila = cursor.fetchone()
+            
+            # 3. Empaquetamos y respondemos
+            if fila:
+                resultado = {
+                    "id_propietario": fila[0],
+                    "nombre_completo": fila[1],
+                    "curp": fila[2],
+                    "direccion": fila[3],
+                    "telefono": fila[4],
+                    "correo": fila[5], # Lo nombramos 'correo' para que coincida con la vista
+                    "estado_licencia": fila[6],
+                    "estado": fila[7]
+                }
+                return True, resultado
+            else:
+                return False, "No se encontró ningún propietario registrado con esa CURP."
+                
+        except Exception as e:
+            return False, f"Error inesperado al buscar propietario: {str(e)}"
+        finally:
+            conexion.close()
