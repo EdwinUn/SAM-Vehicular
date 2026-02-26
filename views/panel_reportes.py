@@ -27,7 +27,6 @@ class PanelReportes(QWidget):
         # 2. Zona de Filtros (Controles superiores)
         layout_controles = QHBoxLayout()
         
-        layout_controles.addWidget(QLabel("Seleccionar Reporte:"))
         self.combo_reportes = QComboBox()
         # Agregamos exactamente los 6 reportes que exige tu manual de requerimientos
         layout_controles.addWidget(QLabel("Seleccionar Reporte:"))
