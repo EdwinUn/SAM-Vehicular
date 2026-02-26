@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-QPushButton, QStackedWidget, QLabel, QFrame, QGridLayout)
+QPushButton, QStackedWidget, QLabel, QFrame, QGridLayout, QLineEdit)
 from PySide6.QtCore import Qt
 
 # Importación de paneles de vistas
@@ -181,12 +181,58 @@ class VentanaPrincipal(QMainWindow):
         
         # BOTÓN DE ACTUALIZAR
         layout.addSpacing(30)
+
         btn_actualizar = QPushButton("↻ Refrescar Datos")
         btn_actualizar.setMaximumWidth(200)
         btn_actualizar.clicked.connect(self.actualizar_dashboard)
         layout.addWidget(btn_actualizar, alignment=Qt.AlignCenter)
         
         layout.addStretch()
+
+        layout.addWidget(btn_actualizar, alignment=Qt.AlignCenter)
+        
+        # ==========================================
+        # NUEVO: SECCIÓN DE BÚSQUEDA RÁPIDA
+        # ==========================================
+        layout.addSpacing(30)
+        
+        # 1. Línea separadora visual
+        linea = QFrame()
+        linea.setFrameShape(QFrame.HLine)
+        linea.setStyleSheet("background-color: #45475a; max-height: 1px;")
+        layout.addWidget(linea)
+        
+        layout.addSpacing(20)
+
+        # 2. Título de la sección
+        lbl_busqueda = QLabel("Búsqueda Rápida de Vehículo")
+        lbl_busqueda.setStyleSheet("font-size: 18px; font-weight: bold; color: #cdd6f4;")
+        layout.addWidget(lbl_busqueda)
+
+        # 3. Barra de búsqueda y botón
+        layout_buscar = QHBoxLayout()
+        self.input_busqueda_rapida = QLineEdit()
+        self.input_busqueda_rapida.setPlaceholderText("Ingrese Placa o VIN (Ej. YUC-1234)...")
+        self.input_busqueda_rapida.setMinimumHeight(40)
+        
+        btn_buscar_rapido = QPushButton("🔍 Buscar")
+        btn_buscar_rapido.setMinimumHeight(40)
+        btn_buscar_rapido.setStyleSheet("background-color: #89b4fa; color: #1e1e2e; font-weight: bold; padding: 0px 20px;")
+        btn_buscar_rapido.clicked.connect(self.ejecutar_busqueda_rapida)
+
+        layout_buscar.addWidget(self.input_busqueda_rapida)
+        layout_buscar.addWidget(btn_buscar_rapido)
+        layout.addLayout(layout_buscar)
+
+        # 4. Etiqueta para mostrar el resultado (inicia oculta)
+        self.lbl_resultado_busqueda = QLabel("")
+        self.lbl_resultado_busqueda.setWordWrap(True)
+        self.lbl_resultado_busqueda.hide() 
+        layout.addWidget(self.lbl_resultado_busqueda)
+
+        layout.addStretch() # (Asegúrate de mantener este addStretch al final)
+        
+        return widget
         
         # === IMPORTANTE: Ahora retornamos el widget en lugar de añadirlo aquí ===
         return widget 
@@ -199,6 +245,51 @@ class VentanaPrincipal(QMainWindow):
         self.lbl_tot_reportados.setText(f"{stats['reportados']:,}")
         self.lbl_tot_multas.setText(f"{stats['multas_pendientes']:,}")
         self.lbl_tot_recaudacion.setText(f"${stats['recaudacion']:,.2f} MXN")
+
+    def ejecutar_busqueda_rapida(self):
+        """Busca un vehículo desde el dashboard y muestra una mini-tarjeta de resultado."""
+        criterio = self.input_busqueda_rapida.text().strip().upper()
+        
+        if not criterio:
+            self.lbl_resultado_busqueda.setText("⚠️ Por favor, ingrese un VIN o Placa para buscar.")
+            self.lbl_resultado_busqueda.setStyleSheet("color: #f9e2af; background-color: #181825; padding: 15px; border-radius: 5px; border-left: 5px solid #f9e2af;")
+            self.lbl_resultado_busqueda.show()
+            return
+            
+        # Reutilizamos nuestro "Omnibox" del Gestor
+        exito, resultado = GestorVehiculos.buscar_vehiculo_universal(criterio)
+        
+        if exito:
+            # Si lo encuentra, usamos un poco de HTML para dibujar una tabla bonita dentro del QLabel
+            estado = resultado['estado_legal']
+            color_estado = "#a6e3a1" if estado == "Activo" else "#f38ba8" # Verde si activo, rojo si reportado
+            
+            texto_html = f"""
+            <table width='100%' cellpadding='5'>
+                <tr>
+                    <td><b>Placa:</b> {resultado['placa']}</td>
+                    <td><b>VIN:</b> {resultado['vin']}</td>
+                </tr>
+                <tr>
+                    <td><b>Marca:</b> {resultado['marca']}</td>
+                    <td><b>Modelo:</b> {resultado['modelo']} ({resultado['anio']})</td>
+                </tr>
+                <tr>
+                    <td><b>Color:</b> {resultado['color']}</td>
+                    <td><b>Estado:</b> <span style='color: {color_estado}; font-weight: bold;'>{estado}</span></td>
+                </tr>
+            </table>
+            """
+            self.lbl_resultado_busqueda.setText(texto_html)
+            self.lbl_resultado_busqueda.setStyleSheet("color: #cdd6f4; background-color: #313244; padding: 15px; border-radius: 5px; border-left: 5px solid #89b4fa;")
+        else:
+            # Si no existe, mostramos error
+            self.lbl_resultado_busqueda.setText(f"❌ {resultado}")
+            self.lbl_resultado_busqueda.setStyleSheet("color: #f38ba8; background-color: #181825; padding: 15px; border-radius: 5px; border-left: 5px solid #f38ba8;")
+            
+        self.lbl_resultado_busqueda.show()
+
+
 
     # ==========================
     # PERMISOS
