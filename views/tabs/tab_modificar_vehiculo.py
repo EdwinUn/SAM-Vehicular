@@ -82,13 +82,11 @@ class TabModificarVehiculo(QWidget):
         # --- CAMPOS EDITABLES ---
         self.mod_color = QComboBox()
         self.mod_color.addItems(cat.COLORES_VEHICULO)
-        self.mod_color.setPlaceholderText("Seleccione un color...") # Texto fantasma
         self.mod_color.addItems(cat.COLORES_VEHICULO)
         self.mod_color.setCurrentIndex(-1) # Forzamos a que empiece en blanco
         
         self.mod_estado = QComboBox()
         self.mod_estado.addItems(cat.ESTADOS_VEHICULO) 
-        self.mod_estado.setPlaceholderText("Seleccione un estado...")
         self.mod_estado.addItems(cat.ESTADOS_VEHICULO) 
         self.mod_estado.setCurrentIndex(-1) # Forzamos a que empiece en blanco
 
@@ -100,7 +98,7 @@ class TabModificarVehiculo(QWidget):
         formulario.addRow("ID Propietario:", layout_propietario)
         
         formulario.addRow("Placa Actual:", layout_placa)
-        formulario.addRow("Nuevo Color:", self.mod_color)
+        formulario.addRow("Color:", self.mod_color)
         formulario.addRow("Estado Legal:", self.mod_estado)
         
         layout.addLayout(formulario)
@@ -197,7 +195,6 @@ class TabModificarVehiculo(QWidget):
             self.mod_color.setCurrentText(resultado["color"])
             self.mod_estado.setCurrentText(resultado["estado_legal"])
             
-            QMessageBox.information(self, "Vehículo Encontrado", "Datos cargados correctamente. Modifique lo necesario.")
         else:
             self.limpiar_formulario_modificar()
             QMessageBox.critical(self, "No encontrado", resultado)

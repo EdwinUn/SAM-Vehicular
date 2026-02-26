@@ -14,7 +14,7 @@ class UsuarioPrueba:
     def __init__(self):
         self.id_usuario = 1
         self.nombre_usuario = "Admin de Pruebas"
-        self.rol = "Operador Administrativo" # <- Si quieren cambiar el rol solo cambian esta string por otro rol disponible
+        self.rol = "Agente de Tránsito" # <- Si quieren cambiar el rol solo cambian esta string por otro rol disponible
     """
     Estos son los roles disponibles:
     ROLES_USUARIO = [
