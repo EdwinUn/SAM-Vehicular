@@ -67,8 +67,15 @@ def crear_tablas():
             monto REAL NOT NULL,
             licencia_conductor TEXT,
             estado TEXT DEFAULT 'Pendiente',
+            
+            -- NUEVAS COLUMNAS DE AUDITORÍA
+            id_usuario_registro INTEGER NOT NULL,
+            id_usuario_actualizacion INTEGER,
+            
             FOREIGN KEY (vin_infractor) REFERENCES vehiculos (vin),
-            FOREIGN KEY (id_agente) REFERENCES agentes (id_agente)
+            FOREIGN KEY (id_agente) REFERENCES agentes (id_agente),
+            FOREIGN KEY (id_usuario_registro) REFERENCES usuarios (id_usuario),
+            FOREIGN KEY (id_usuario_actualizacion) REFERENCES usuarios (id_usuario)
         )
     ''')
 
@@ -80,7 +87,7 @@ def crear_tablas():
             password TEXT NOT NULL,
             rol TEXT NOT NULL,
             estado TEXT DEFAULT 'Activo',
-            debe_cambiar_password INTEGER DEFAULT 1  -- <--- ESTE ES EL AÑADIDO
+            debe_cambiar_password INTEGER DEFAULT 1 
         )
     ''')
 
