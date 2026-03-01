@@ -48,7 +48,7 @@ class GestorVehiculos:
 
             cursor.execute('''
                 INSERT INTO vehiculos (vin, placa, marca, modelo, anio, color, clase, estado_legal, procedencia, id_propietario, id_usuario_registro)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (vehiculo.vin, vehiculo.placa, vehiculo.marca, vehiculo.modelo, vehiculo.anio, 
                 vehiculo.color, vehiculo.clase, vehiculo.estado_legal, vehiculo.procedencia, vehiculo.id_propietario, vehiculo.id_usuario_registro))
             
