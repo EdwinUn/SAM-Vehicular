@@ -33,7 +33,7 @@ class TabRegistrarVehiculo(QWidget):
         self.input_placa.setPlaceholderText("Ej: YYU-021-A")
         
         self.input_id_propietario = QLineEdit()
-        self.input_id_propietario.setPlaceholderText("ID numérico del propietario")
+        self.input_id_propietario.setPlaceholderText("Ej. PRP-00001")
         
         self.input_anio = QSpinBox()
         self.input_anio.setRange(1899, 2030)
@@ -135,12 +135,13 @@ class TabRegistrarVehiculo(QWidget):
             QMessageBox.warning(self, "Campos Incompletos", "Por favor, llene el VIN, Placa y el ID del Propietario.")
             return
 
-        try:
-            id_propietario = int(id_propietario_str)
-        except ValueError:
-            QMessageBox.warning(self, "Error de Formato", "El ID del propietario debe ser un número entero válido.")
+        id_propietario_str = id_propietario_str.upper()
+        
+        if not id_propietario_str.startswith("PRP-") or not id_propietario_str[4:].isdigit():
+            QMessageBox.warning(self, "Error de Formato", "El ID del propietario debe tener el formato de matrícula oficial (Ej. PRP-00003).")
             return
-
+        id_propietario = int(id_propietario_str.replace("PRP-", ""))
+        
         nuevo_vehiculo = Vehiculo(
             vin=vin, placa=placa, marca=marca, modelo=modelo, anio=anio, 
             color=color, clase=clase, estado_legal=estado, 
