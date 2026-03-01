@@ -169,8 +169,7 @@ class GestorReportes:
     @staticmethod
     def reporte_bitacora_completa():
         """
-        Extrae el historial inmutable generado por los Triggers de SQLite.
-        Muestra cada acción (Creación/Actualización) con su fecha, hora y autor.
+        Muestra la cronología con el detalle exacto de los cambios realizados.
         """
         query = '''
             SELECT 
@@ -178,7 +177,8 @@ class GestorReportes:
                 b.fecha_hora as Fecha_Hora,
                 UPPER(b.tabla_afectada) as Modulo_Afectado,
                 b.id_registro_afectado as Registro_Afectado,
-                b.tipo_accion as Accion_Realizada,
+                b.tipo_accion as Accion,
+                b.detalles as Detalles_del_Cambio, -- <--- AGREGAMOS EL DETALLE AL SELECT
                 IFNULL(u.nombre_usuario, 'Sistema/Desconocido') as Usuario_Responsable
             FROM bitacora_auditoria b
             LEFT JOIN usuarios u ON b.id_usuario = u.id_usuario

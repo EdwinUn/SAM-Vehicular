@@ -9,22 +9,23 @@ sys.path.append(ruta_raiz)
 from database.conexion import obtener_conexion
 from logic.auth import Auth
 from models.usuario import Usuario
+import logic.catalogos as cat
 
 def generar_datos_prueba():
     print("==================================================")
-    print("🚀 INICIANDO CARGA DE DATOS PARA ENTORNO DE PRUEBAS")
+    print("🚀 INICIANDO CARGA Y SIMULACIÓN DE TRÁMITES")
     print("==================================================")
     
     conexion = obtener_conexion()
     cursor = conexion.cursor()
 
     try:
-        # 1. USUARIOS
+        # 1. USUARIOS (Base para la auditoría)
         usuarios_test = [
-            ("admin_central", "admin123", "Administrador"),
-            ("operador_1", "operador123", "Operador Administrativo"),
-            ("agente_007", "agente123", "Agente de Tránsito"),
-            ("supervisor_general", "super123", "Supervisor")
+            ("admin_central", "admin123", cat.ROLES_USUARIO[0]),
+            ("operador_1", "operador123", cat.ROLES_USUARIO[1]),
+            ("agente_007", "agente123", cat.ROLES_USUARIO[2]),
+            ("supervisor_general", "super123", cat.ROLES_USUARIO[3])
         ]
         for nom, pwd, rol in usuarios_test:
             u = Usuario(nombre_usuario=nom, password=pwd, rol=rol, id_usuario_registro=1)
@@ -32,8 +33,8 @@ def generar_datos_prueba():
 
         # 2. AGENTES
         agentes = [
-            ("AG-101", "Oficial Ricardo Milos", "Patrullero", "Activo", 1), 
-            ("AG-102", "Oficial Sarah Connor", "Vialidad", "Activo", 1)
+            ("AG-101", "Oficial Ricardo Milos", "Patrullero", cat.ESTADOS_AGENTE[0], 1), 
+            ("AG-102", "Oficial Sarah Connor", "Vialidad", cat.ESTADOS_AGENTE[0], 1)
         ]
         cursor.executemany('''INSERT OR IGNORE INTO agentes 
             (numero_placa, nombre_completo, cargo, estado, id_usuario_registro) 
@@ -41,12 +42,10 @@ def generar_datos_prueba():
 
         # 3. PROPIETARIOS
         propietarios = [
-            # Nombres, Ap_Paterno, Ap_Materno, CURP, Calle, Num_Ext, Num_Int, Colonia, CP, Ciudad, Estado_Prov, Telefono, Correo, Estado_Licencia, ID_Registro
-            ("Juan", "Pérez", "López", "PELJ800101HDFRRN01", "Calle 60", "123", "", "Centro", "97000", "Mérida", "Yucatán", "9991234567", "juan@mail.com", "Vigente", 1),
-            ("María", "García", "Sosa", "GASM900505MDFRRN02", "Av. Itzaes", "456", "", "García Ginerés", "97070", "Mérida", "Yucatán", "9997654321", "maria@mail.com", "Vigente", 1),
-            ("Carlos", "López", "Ruiz", "LORC750312HDFRRN03", "Calle 50", "789", "A", "Pacabtún", "97160", "Mérida", "Yucatán", "9995551122", "carlos.lopez@mail.com", "Suspendida", 1) # <-- OJO: Suspendida
+            ("Juan", "Pérez", "López", "PELJ800101HDFRRN01", "Calle 60", "123", "", "Centro", "97000", "Mérida", "Yucatán", "9991234567", "juan@mail.com", cat.ESTADOS_LICENCIA[0], 1),
+            ("María", "García", "Sosa", "GASM900505MDFRRN02", "Av. Itzaes", "456", "", "García Ginerés", "97070", "Mérida", "Yucatán", "9997654321", "maria@mail.com", cat.ESTADOS_LICENCIA[0], 1),
+            ("Carlos", "López", "Ruiz", "LORC750312HDFRRN03", "Calle 50", "789", "A", "Pacabtún", "97160", "Mérida", "Yucatán", "9995551122", "carlos.lopez@mail.com", cat.ESTADOS_LICENCIA[1], 1)
         ]
-        
         cursor.executemany('''INSERT OR IGNORE INTO propietarios 
             (nombres, apellido_paterno, apellido_materno, curp, calle, numero_exterior, 
             numero_interior, colonia, codigo_postal, ciudad, estado_provincia, 
@@ -55,9 +54,9 @@ def generar_datos_prueba():
         
         # 4. VEHÍCULOS
         vehiculos = [
-            ("VIN00000000000001", "YUC-1001", "Toyota", "Corolla", 2022, "Gris", "Sedán", "Nacional", 1, 1), # De Juan
-            ("VIN00000000000002", "YUC-2001", "Nissan", "NP300", 2023, "Blanco", "Camioneta", "Nacional", 2, 1), # De María
-            ("VIN00000000000003", "YUC-3001", "Chevrolet", "Chevy", 2010, "Negro", "Hatchback", "Fronterizo", 3, 1) # De Carlos
+            ("VIN00000000000001", "YUC-1001", "Toyota", "Corolla", 2022, "Gris", "Sedán", "Nacional", 1, 1),
+            ("VIN00000000000002", "YUC-2001", "Nissan", "NP300", 2023, "Blanco", "Camioneta", "Nacional", 2, 1),
+            ("VIN00000000000003", "YUC-3001", "Chevrolet", "Chevy", 2010, "Negro", "Hatchback", "Importado", 3, 1)
         ]
         cursor.executemany('''INSERT OR IGNORE INTO vehiculos 
             (vin, placa, marca, modelo, anio, color, clase, procedencia, id_propietario, id_usuario_registro) 
@@ -65,59 +64,66 @@ def generar_datos_prueba():
 
         # 5. INFRACCIONES
         infracciones = [
-            ("FOL-00001", "VIN00000000000001", 1, "2026-02-20", "10:30", "Centro Histórico", "Exceso de velocidad", "Art. 45", 1500.0, "Pendiente", 1),
-            ("FOL-00002", "VIN00000000000002", 2, "2026-01-15", "14:15", "Periférico Norte", "Mal estacionado", "Art. 12", 850.0, "Pendiente", 1),
-            ("FOL-00003", "VIN00000000000003", 1, "2025-12-31", "23:45", "Paseo de Montejo", "Ebriedad", "Art. 100", 8500.0, "Pendiente", 1)
+            ("FOL-00001", "VIN00000000000001", 1, "2026-02-20", "10:30", "Centro", "Exceso de velocidad", "Art. 64", 1500.0, cat.ESTADOS_INFRACCION[0], 1),
+            ("FOL-00002", "VIN00000000000002", 2, "2026-01-15", "14:15", "Periférico", "Estacionamiento prohibido", "Art. 75", 850.0, cat.ESTADOS_INFRACCION[0], 1)
         ]
         cursor.executemany('''INSERT OR IGNORE INTO infracciones 
             (folio, vin_infractor, id_agente, fecha, hora, lugar, tipo_infraccion, motivo, monto, estado, id_usuario_registro) 
             VALUES (?,?,?,?,?,?,?,?,?,?,?)''', infracciones)
 
-        # 6. SIMULAR EL PASO DEL TIEMPO PARA LA AUDITORÍA
-        time.sleep(1) 
-        cursor.execute("UPDATE infracciones SET estado = 'Pagada', id_usuario_actualizacion = 2 WHERE folio = 'FOL-00002'") # Operador 1 cobra multa
-        cursor.execute("UPDATE vehiculos SET estado_legal = 'Reporte de robo', id_usuario_actualizacion = 1 WHERE vin = 'VIN00000000000003'") # Admin reporta robo de Chevy
-        
         conexion.commit()
 
-        # =====================================================================
-        # GUÍA DE PRUEBAS PARA IMPRIMIR EN CONSOLA (PARA LOS TESTERS)
-        # =====================================================================
-        print("\n Base de datos generada con éxito y Triggers disparados.")
-        print("\n" + "="*60)
-        print(" GUÍA DE PRUEBAS PARA QA (TESTERS) 📋")
-        print("="*60)
+        # ==========================================
+        # 6. SIMULACIÓN DE TRÁMITES (AUDITORÍA DETALLADA)
+        # ==========================================
+        print("🕒 Simulando transacciones para la bitácora...")
+        time.sleep(1) 
+
+        # Trámite A: Reemplacamiento y Cambio de Color (Hecho por Operador 1)
+        cursor.execute('''
+            UPDATE vehiculos 
+            SET placa = 'YUC-9999', color = 'Rojo', id_usuario_actualizacion = 2 
+            WHERE vin = 'VIN00000000000001'
+        ''')
+
+        # Trámite B: Transferencia de Propiedad (Juan -> María)
+        cursor.execute('''
+            UPDATE vehiculos 
+            SET id_propietario = 2, id_usuario_actualizacion = 2 
+            WHERE vin = 'VIN00000000000001'
+        ''')
+
+        # Trámite C: Pago de Multa y Reporte de Robo (Hecho por Admin)
+        cursor.execute('''
+            UPDATE infracciones SET estado = ?, id_usuario_actualizacion = 1 WHERE folio = 'FOL-00002'
+        ''', (cat.ESTADOS_INFRACCION[1],))
         
-        print("\n🔹 CASO 1: SEGURIDAD Y PERMISOS DE ROLES (Expected: ÉXITO PARCIAL)")
-        print("  Acción: Inicia sesión con 'operador_1' (pass: operador123).")
-        print("  Prueba: Revisa el menú lateral izquierdo.")
-        print("  Debe pasar: NO debes poder ver los botones de 'Usuarios' ni 'Infracciones'.")
-        print("  Debe pasar: En las pantallas de vehículos, NO debes ver quién modificó los registros.")
+        cursor.execute('''
+            UPDATE vehiculos SET estado_legal = ?, id_usuario_actualizacion = 1 WHERE vin = 'VIN00000000000003'
+        ''', (cat.ESTADOS_VEHICULO[2],))
 
-        print("\n🔹 CASO 2: BLOQUEO POR MULTAS PENDIENTES (Expected: FALLO INTENCIONAL)")
-        print("  Acción: Ve a 'Vehículos' -> 'Modificar' y busca la placa 'YUC-1001'.")
-        print("  Prueba: Intenta hacerle un Cambio de Propietario o Reemplacamiento.")
-        print("  Debe pasar: El sistema DEBE BLOQUEARTE y arrojar un error rojo porque el auto tiene la multa FOL-00001 PENDIENTE.")
+        # Trámite D: Actualización de datos de Propietario (Cambio de teléfono y licencia)
+        cursor.execute('''
+            UPDATE propietarios 
+            SET telefono = '9990001122', estado_licencia = ?, id_usuario_actualizacion = 1
+            WHERE curp = 'PELJ800101HDFRRN01'
+        ''', (cat.ESTADOS_LICENCIA[2],))
 
-        print("\n🔹 CASO 3: REGLA DE NEGOCIO - LICENCIA SUSPENDIDA (Expected: FALLO INTENCIONAL)")
-        print("  Acción: Ve a 'Vehículos' -> 'Modificar' y busca la placa 'YUC-2001'.")
-        print("  Prueba: Intenta transferirle este auto a la CURP 'LORC750312HDFRRN03' (Carlos López).")
-        print("  Debe pasar: El sistema DEBE RECHAZAR el trámite porque Carlos tiene la licencia 'Suspendida'.")
+        conexion.commit()
 
-        print("\n🔹 CASO 4: ETIQUETAS DE AUDITORÍA (Expected: ÉXITO)")
-        print("  Acción: Cierra sesión e ingresa como 'admin_central' (pass: admin123).")
-        print("  Prueba: Ve a buscar el vehículo 'YUC-3001'.")
-        print("  Debe pasar: El auto debe salir con 'Reporte de robo'.")
-        print("  Debe pasar: En la parte inferior, DEBE APARECER un texto chiquito diciendo que 'admin_central' fue quien lo modificó por última vez.")
-
-        print("\n🔹 CASO 5: LA CAJA NEGRA - REPORTE 11 (Expected: ÉXITO)")
-        print("  Acción: Estando como Admin, ve a la pestaña 'Reportes'.")
-        print("  Prueba: Genera el Reporte número '11. Historial Completo de Movimientos'.")
-        print("  Debe pasar: Debes ver una tabla detallada con todas las 'CREACIONES' iniciales de este script, y arriba deben salir las 'ACTUALIZACIONES' simuladas.")
-        print("  Prueba extra: Haz clic en 'Exportar CSV' y verifica que el Excel se abra bien y no esté vacío.")
-        
-        print("\n" + "="*60)
-        print("Porfa testeen todo ;v")
+        print("\n✅ Simulación completada.")
+        print("\n" + "="*65)
+        print(" GUÍA PARA LA PRESENTACIÓN DE MAÑANA 🎓")
+        print("="*65)
+        print("\n1. MUESTRA EL DASHBOARD: Los números ya reflejan el auto robado y la multa pagada.")
+        print("\n2. EL PLATO FUERTE (REPORTE 11):")
+        print("   - Abre 'Reportes' -> '11. Historial Completo de Movimientos'.")
+        print("   - Señala la columna 'Detalles del Cambio'.")
+        print("   - Muestra cómo el sistema detectó que el auto VIN...01 cambió de placa 'YUC-1001' a 'YUC-9999'.")
+        print("   - Muestra cómo registró que el color pasó de 'Gris' a 'Rojo'.")
+        print("\n3. SEGREGACIÓN DE FUNCIONES:")
+        print("   - Explica que el 'operador_1' hizo los trámites de placas, pero el 'admin' gestionó la seguridad.")
+        print("\n" + "="*65)
 
     except Exception as e:
         print(f"\n❌ Error grave al cargar semilla: {e}")

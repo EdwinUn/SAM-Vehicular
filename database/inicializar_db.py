@@ -6,12 +6,16 @@ ruta_raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ruta_raiz)
 
 from database.conexion import obtener_conexion
+
 def crear_tablas():
     conexion = obtener_conexion()
     cursor = conexion.cursor()
     
+    # ==========================================
+    # 1. TABLAS PRINCIPALES
+    # ==========================================
     
-    # 1. Tabla Usuarios (Para el Login y seguridad)
+    # Tabla Usuarios
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS usuarios (
             id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,17 +24,14 @@ def crear_tablas():
             rol TEXT NOT NULL,
             estado TEXT DEFAULT 'Activo',
             debe_cambiar_password INTEGER DEFAULT 1,
-            
-            -- COLUMNAS DE AUDITORÍA
             id_usuario_registro INTEGER,
             id_usuario_actualizacion INTEGER,
-            
             FOREIGN KEY (id_usuario_registro) REFERENCES usuarios (id_usuario),
             FOREIGN KEY (id_usuario_actualizacion) REFERENCES usuarios (id_usuario)
         )
     ''')
     
-    # 2. Tabla Agentes de Tránsito
+    # Tabla Agentes
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS agentes (
             id_agente INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,27 +39,21 @@ def crear_tablas():
             nombre_completo TEXT NOT NULL,
             cargo TEXT,
             estado TEXT DEFAULT 'Activo',
-            
-            -- COLUMNAS DE AUDITORÍA
             id_usuario_registro INTEGER NOT NULL,
             id_usuario_actualizacion INTEGER,
-            
             FOREIGN KEY (id_usuario_registro) REFERENCES usuarios (id_usuario),
             FOREIGN KEY (id_usuario_actualizacion) REFERENCES usuarios (id_usuario)
         )
     ''')
-# 3. Tabla Propietarios [cite: 398, 400]
+
+    # Tabla Propietarios
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS propietarios (
             id_propietario INTEGER PRIMARY KEY AUTOINCREMENT,
-            
-            -- Datos Personales Desglosados
             nombres TEXT NOT NULL,
             apellido_paterno TEXT NOT NULL,
             apellido_materno TEXT,
             curp TEXT UNIQUE NOT NULL,
-            
-            -- Dirección Desglosada
             calle TEXT NOT NULL,
             numero_exterior TEXT NOT NULL,
             numero_interior TEXT,
@@ -66,22 +61,18 @@ def crear_tablas():
             codigo_postal TEXT NOT NULL,
             ciudad TEXT NOT NULL,
             estado_provincia TEXT NOT NULL,
-            
-            -- Contacto y Administrativo (Los que ya tenías)
             telefono TEXT,
             correo_electronico TEXT,
             estado_licencia TEXT,
             estado TEXT DEFAULT 'Activo',
-            
-            -- COLUMNAS DE AUDITORÍA (Restauradas)
             id_usuario_registro INTEGER NOT NULL,
             id_usuario_actualizacion INTEGER,
-            
             FOREIGN KEY (id_usuario_registro) REFERENCES usuarios (id_usuario),
             FOREIGN KEY (id_usuario_actualizacion) REFERENCES usuarios (id_usuario)
         )
     ''')
-# 4. Tabla Vehículos
+
+    # Tabla Vehículos
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS vehiculos (
             vin TEXT PRIMARY KEY,
@@ -94,17 +85,15 @@ def crear_tablas():
             estado_legal TEXT DEFAULT 'Activo',
             procedencia TEXT NOT NULL,
             id_propietario INTEGER NOT NULL,
-            
-            -- COLUMNAS DE AUDITORÍA
             id_usuario_registro INTEGER NOT NULL,
             id_usuario_actualizacion INTEGER,
-            
             FOREIGN KEY (id_propietario) REFERENCES propietarios (id_propietario),
             FOREIGN KEY (id_usuario_registro) REFERENCES usuarios (id_usuario),
             FOREIGN KEY (id_usuario_actualizacion) REFERENCES usuarios (id_usuario)
         )
     ''')
-    # 5. Tabla Infracciones (Multas)
+
+    # Tabla Infracciones
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS infracciones (
             folio TEXT PRIMARY KEY,
@@ -118,19 +107,17 @@ def crear_tablas():
             monto REAL NOT NULL,
             licencia_conductor TEXT,
             estado TEXT DEFAULT 'Pendiente',
-            
-            -- NUEVAS COLUMNAS DE AUDITORÍA
             id_usuario_registro INTEGER NOT NULL,
             id_usuario_actualizacion INTEGER,
-            
             FOREIGN KEY (vin_infractor) REFERENCES vehiculos (vin),
             FOREIGN KEY (id_agente) REFERENCES agentes (id_agente),
             FOREIGN KEY (id_usuario_registro) REFERENCES usuarios (id_usuario),
             FOREIGN KEY (id_usuario_actualizacion) REFERENCES usuarios (id_usuario)
         )
     ''')
-# ==========================================
-    # 6. TABLA DE BITÁCORA DE AUDITORÍA (CAJA NEGRA)
+
+    # ==========================================
+    # 2. BITÁCORA (CAJA NEGRA)
     # ==========================================
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS bitacora_auditoria (
@@ -139,101 +126,107 @@ def crear_tablas():
             tabla_afectada TEXT NOT NULL,
             id_registro_afectado TEXT NOT NULL,
             tipo_accion TEXT NOT NULL, 
+            detalles TEXT, 
             id_usuario INTEGER,
-            
             FOREIGN KEY (id_usuario) REFERENCES usuarios (id_usuario)
         )
     ''')
 
     # ==========================================
-    # 7. TRIGGERS (DISPARADORES AUTOMÁTICOS)
+    # 3. DISPARADORES (AUDITORÍA DETALLADA)
     # ==========================================
 
-    # --- TRIGGERS PARA VEHÍCULOS ---
+    # --- TRIGGERS VEHÍCULOS ---
     cursor.execute('''
-        CREATE TRIGGER IF NOT EXISTS trg_vehiculos_insert 
-        AFTER INSERT ON vehiculos
+        CREATE TRIGGER IF NOT EXISTS trg_vehiculos_insert AFTER INSERT ON vehiculos
         BEGIN
-            INSERT INTO bitacora_auditoria (tabla_afectada, id_registro_afectado, tipo_accion, id_usuario)
-            VALUES ('vehiculos', NEW.vin, 'CREACIÓN', NEW.id_usuario_registro);
+            INSERT INTO bitacora_auditoria (tabla_afectada, id_registro_afectado, tipo_accion, id_usuario, detalles)
+            VALUES ('vehiculos', NEW.vin, 'CREACIÓN', NEW.id_usuario_registro, 'Registro inicial del vehículo');
         END;
     ''')
 
     cursor.execute('''
-        CREATE TRIGGER IF NOT EXISTS trg_vehiculos_update 
-        AFTER UPDATE ON vehiculos
-        -- Solo registra si realmente hubo un cambio de usuario (evita falsos positivos)
+        CREATE TRIGGER IF NOT EXISTS trg_vehiculos_update AFTER UPDATE ON vehiculos
         WHEN NEW.id_usuario_actualizacion IS NOT NULL 
         BEGIN
-            INSERT INTO bitacora_auditoria (tabla_afectada, id_registro_afectado, tipo_accion, id_usuario)
-            VALUES ('vehiculos', NEW.vin, 'ACTUALIZACIÓN', NEW.id_usuario_actualizacion);
+            INSERT INTO bitacora_auditoria (tabla_afectada, id_registro_afectado, tipo_accion, id_usuario, detalles)
+            VALUES ('vehiculos', NEW.vin, 'ACTUALIZACIÓN', NEW.id_usuario_actualizacion,
+                (CASE WHEN OLD.placa <> NEW.placa THEN 'Placa: ' || OLD.placa || ' -> ' || NEW.placa || ' | ' ELSE '' END) ||
+                (CASE WHEN OLD.color <> NEW.color THEN 'Color: ' || OLD.color || ' -> ' || NEW.color || ' | ' ELSE '' END) ||
+                (CASE WHEN OLD.estado_legal <> NEW.estado_legal THEN 'Estado: ' || OLD.estado_legal || ' -> ' || NEW.estado_legal ELSE '' END) ||
+                (CASE WHEN OLD.id_propietario <> NEW.id_propietario THEN 'Cambio Dueño ID: ' || OLD.id_propietario || ' -> ' || NEW.id_propietario ELSE '' END)
+            );
         END;
     ''')
 
-    # --- TRIGGERS PARA PROPIETARIOS ---
+    # --- TRIGGERS PROPIETARIOS ---
     cursor.execute('''
-        CREATE TRIGGER IF NOT EXISTS trg_propietarios_insert 
-        AFTER INSERT ON propietarios
+        CREATE TRIGGER IF NOT EXISTS trg_propietarios_insert AFTER INSERT ON propietarios
         BEGIN
-            INSERT INTO bitacora_auditoria (tabla_afectada, id_registro_afectado, tipo_accion, id_usuario)
-            VALUES ('propietarios', NEW.curp, 'CREACIÓN', NEW.id_usuario_registro);
+            INSERT INTO bitacora_auditoria (tabla_afectada, id_registro_afectado, tipo_accion, id_usuario, detalles)
+            VALUES ('propietarios', NEW.curp, 'CREACIÓN', NEW.id_usuario_registro, 'Alta de propietario en padrón');
         END;
     ''')
 
     cursor.execute('''
-        CREATE TRIGGER IF NOT EXISTS trg_propietarios_update 
-        AFTER UPDATE ON propietarios
+        CREATE TRIGGER IF NOT EXISTS trg_propietarios_update AFTER UPDATE ON propietarios
         WHEN NEW.id_usuario_actualizacion IS NOT NULL
         BEGIN
-            INSERT INTO bitacora_auditoria (tabla_afectada, id_registro_afectado, tipo_accion, id_usuario)
-            VALUES ('propietarios', NEW.curp, 'ACTUALIZACIÓN', NEW.id_usuario_actualizacion);
+            INSERT INTO bitacora_auditoria (tabla_afectada, id_registro_afectado, tipo_accion, id_usuario, detalles)
+            VALUES ('propietarios', NEW.curp, 'ACTUALIZACIÓN', NEW.id_usuario_actualizacion,
+                (CASE WHEN OLD.calle <> NEW.calle THEN 'Dirección actualizada | ' ELSE '' END) ||
+                (CASE WHEN OLD.telefono <> NEW.telefono THEN 'Tel: ' || OLD.telefono || ' -> ' || NEW.telefono || ' | ' ELSE '' END) ||
+                (CASE WHEN OLD.estado_licencia <> NEW.estado_licencia THEN 'Licencia: ' || OLD.estado_licencia || ' -> ' || NEW.estado_licencia || ' | ' ELSE '' END) ||
+                (CASE WHEN OLD.estado <> NEW.estado THEN 'Estado: ' || OLD.estado || ' -> ' || NEW.estado ELSE '' END)
+            );
         END;
     ''')
 
-    # --- TRIGGERS PARA INFRACCIONES ---
+    # --- TRIGGERS INFRACCIONES ---
     cursor.execute('''
-        CREATE TRIGGER IF NOT EXISTS trg_infracciones_insert 
-        AFTER INSERT ON infracciones
+        CREATE TRIGGER IF NOT EXISTS trg_infracciones_insert AFTER INSERT ON infracciones
         BEGIN
-            INSERT INTO bitacora_auditoria (tabla_afectada, id_registro_afectado, tipo_accion, id_usuario)
-            VALUES ('infracciones', NEW.folio, 'CREACIÓN', NEW.id_usuario_registro);
+            INSERT INTO bitacora_auditoria (tabla_afectada, id_registro_afectado, tipo_accion, id_usuario, detalles)
+            VALUES ('infracciones', NEW.folio, 'CREACIÓN', NEW.id_usuario_registro, 'Emisión de boleta de infracción');
         END;
     ''')
 
     cursor.execute('''
-        CREATE TRIGGER IF NOT EXISTS trg_infracciones_update 
-        AFTER UPDATE ON infracciones
+        CREATE TRIGGER IF NOT EXISTS trg_infracciones_update AFTER UPDATE ON infracciones
         WHEN NEW.id_usuario_actualizacion IS NOT NULL
         BEGIN
-            INSERT INTO bitacora_auditoria (tabla_afectada, id_registro_afectado, tipo_accion, id_usuario)
-            VALUES ('infracciones', NEW.folio, 'ACTUALIZACIÓN', NEW.id_usuario_actualizacion);
+            INSERT INTO bitacora_auditoria (tabla_afectada, id_registro_afectado, tipo_accion, id_usuario, detalles)
+            VALUES ('infracciones', NEW.folio, 'ACTUALIZACIÓN', NEW.id_usuario_actualizacion,
+                'Estado multa: ' || OLD.estado || ' -> ' || NEW.estado
+            );
         END;
     ''')
 
-    # --- TRIGGERS PARA USUARIOS ---
+    # --- TRIGGERS USUARIOS ---
     cursor.execute('''
-        CREATE TRIGGER IF NOT EXISTS trg_usuarios_insert 
-        AFTER INSERT ON usuarios
+        CREATE TRIGGER IF NOT EXISTS trg_usuarios_insert AFTER INSERT ON usuarios
         WHEN NEW.id_usuario_registro IS NOT NULL
         BEGIN
-            INSERT INTO bitacora_auditoria (tabla_afectada, id_registro_afectado, tipo_accion, id_usuario)
-            VALUES ('usuarios', NEW.nombre_usuario, 'CREACIÓN', NEW.id_usuario_registro);
+            INSERT INTO bitacora_auditoria (tabla_afectada, id_registro_afectado, tipo_accion, id_usuario, detalles)
+            VALUES ('usuarios', NEW.nombre_usuario, 'CREACIÓN', NEW.id_usuario_registro, 'Nuevo acceso creado');
         END;
     ''')
 
     cursor.execute('''
-        CREATE TRIGGER IF NOT EXISTS trg_usuarios_update 
-        AFTER UPDATE ON usuarios
+        CREATE TRIGGER IF NOT EXISTS trg_usuarios_update AFTER UPDATE ON usuarios
         WHEN NEW.id_usuario_actualizacion IS NOT NULL
         BEGIN
-            INSERT INTO bitacora_auditoria (tabla_afectada, id_registro_afectado, tipo_accion, id_usuario)
-            VALUES ('usuarios', NEW.nombre_usuario, 'ACTUALIZACIÓN', NEW.id_usuario_actualizacion);
+            INSERT INTO bitacora_auditoria (tabla_afectada, id_registro_afectado, tipo_accion, id_usuario, detalles)
+            VALUES ('usuarios', NEW.nombre_usuario, 'ACTUALIZACIÓN', NEW.id_usuario_actualizacion,
+                (CASE WHEN OLD.rol <> NEW.rol THEN 'Rol: ' || OLD.rol || ' -> ' || NEW.rol || ' | ' ELSE '' END) ||
+                (CASE WHEN OLD.estado <> NEW.estado THEN 'Estado: ' || OLD.estado || ' -> ' || NEW.estado ELSE '' END)
+            );
         END;
     ''')
 
     conexion.commit()
     conexion.close()
-    print("Base de datos y tablas creadas exitosamente.")
+    print("Base de datos inicializada con Auditoría Nivel Detalle.")
 
 if __name__ == "__main__":
     crear_tablas()
