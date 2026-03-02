@@ -317,33 +317,41 @@ class VentanaPrincipal(QMainWindow):
 
 
     # ==========================
-    # PERMISOS
+    # PERMISOS Y SEGREGACIÓN DE FUNCIONES
     # ==========================
     def aplicar_permisos_rol(self):
         rol = self.usuario.rol
 
-        # El Administrador [0] ve todo
+        # 1. Administrador (IT / Seguridad) -> Solo gestiona el sistema y vigila
         if rol == cat.ROLES_USUARIO[0]:
-            pass 
+            # El admin NO hace trabajo operativo
+            self.btn_vehiculos.hide()
+            self.btn_propietarios.hide()
+            self.btn_infracciones.hide()
+            # Se queda con: Inicio, Agentes (Catálogo), Reportes (Auditoría) y Usuarios.
         
-        # Operador Administrativo [1]
+        # 2. Operador Administrativo -> Trámites de Padrón Vehicular
         elif rol == cat.ROLES_USUARIO[1]:
+            # No toca multas ni accesos al sistema
             self.btn_infracciones.hide()
             self.btn_usuarios.hide()
-            self.btn_agentes.hide() # <-- No gestiona agentes
+            self.btn_agentes.hide() 
             
-        # Agente de Tránsito [2] (No puede editar a otros agentes)
+        # 3. Agente de Tránsito -> Multas de calle
         elif rol == cat.ROLES_USUARIO[2]:
+            # Solo levanta multas, no ve nada de gestión ni reportes financieros
             self.btn_propietarios.hide()
             self.btn_reportes.hide()
             self.btn_usuarios.hide()
-            self.btn_agentes.hide() # <-- No gestiona agentes
+            self.btn_agentes.hide()
             
-        # Supervisor [3]
+        # 4. Supervisor -> Jefatura, cobros y reportes
         elif rol == cat.ROLES_USUARIO[3]:
+            # Solo ve reportes y cancela/cobra multas. No registra autos nuevos.
             self.btn_vehiculos.hide()
             self.btn_propietarios.hide()
             self.btn_usuarios.hide()
+            self.btn_agentes.hide()
             
     def ejecutar_cierre_sesion(self):
         """Muestra un diálogo de confirmación antes de cerrar la sesión."""

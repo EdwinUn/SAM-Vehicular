@@ -254,7 +254,7 @@ class PanelUsuarios(QWidget):
             password_temporal = "TMP-" + "".join(random.choices(caracteres, k=5))
             
             # 5. Enviamos al backend
-            exito, msj = Auth.restablecer_password_temporal(id_usuario, password_temporal)
+            exito, msj = Auth.restablecer_password_temporal(id_usuario, password_temporal, self.usuario_actual.id_usuario)
             
             if exito:
                 # 6. Copiamos al portapapeles y avisamos

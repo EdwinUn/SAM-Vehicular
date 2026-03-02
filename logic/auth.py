@@ -122,21 +122,17 @@ class Auth:
             conexion.close()
             
     @staticmethod
-    def restablecer_password_temporal(id_usuario, password_temporal):
-        """Asigna una nueva contraseña temporal a un usuario existente y obliga a cambiarla."""
-        # Encriptamos la nueva temporal antes de guardarla
+    def restablecer_password_temporal(id_usuario, password_temporal, id_admin): # <-- Agrega id_admin
         password_hash = Auth._hashear_password(password_temporal)
-        
         conexion = obtener_conexion()
         cursor = conexion.cursor()
         try:
-            # Ponemos debe_cambiar_password = 1 para que el login lo intercepte
+            # Añadimos id_usuario_actualizacion para "despertar" al Trigger de Auditoría
             cursor.execute('''
                 UPDATE usuarios 
-                SET password = ?, debe_cambiar_password = 1 
+                SET password = ?, debe_cambiar_password = 1, id_usuario_actualizacion = ? 
                 WHERE id_usuario = ?
-            ''', (password_hash, id_usuario))
-            
+            ''', (password_hash, id_admin, id_usuario))
             conexion.commit()
             return True, "Contraseña restablecida con éxito."
         except Exception as e:
