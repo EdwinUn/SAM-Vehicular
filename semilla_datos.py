@@ -25,7 +25,8 @@ def generar_datos_prueba():
             ("admin_central", "admin123", cat.ROLES_USUARIO[0]),
             ("operador_1", "operador123", cat.ROLES_USUARIO[1]),
             ("agente_007", "agente123", cat.ROLES_USUARIO[2]),
-            ("supervisor_general", "super123", cat.ROLES_USUARIO[3])
+            ("supervisor_general", "super123", cat.ROLES_USUARIO[3]),
+            ("admin", "admin123", cat.ROLES_USUARIO[3])
         ]
         for nom, pwd, rol in usuarios_test:
             u = Usuario(nombre_usuario=nom, password=pwd, rol=rol, id_usuario_registro=1)

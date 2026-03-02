@@ -26,7 +26,7 @@ class TabModificarPropietario(QWidget):
         self.input_buscar_curp.setPlaceholderText("CURP a buscar...")
         btn_buscar = QPushButton("Buscar")
         btn_buscar.clicked.connect(self.procesar_busqueda)
-        layout_busqueda.addWidget(QLabel("CURP:"))
+        layout_busqueda.addWidget(QLabel("Nombre:"))
         layout_busqueda.addWidget(self.input_buscar_curp)
         layout_busqueda.addWidget(btn_buscar)
         layout_principal.addLayout(layout_busqueda)
