@@ -2,6 +2,8 @@ import re
 from datetime import datetime
 import logic.catalogos as cat
 import re
+import string
+import random
 
 class Validador:
     """
@@ -311,3 +313,13 @@ class Validador:
         if not re.match(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$', cargo):
             return False, "El cargo solo puede contener letras y espacios."
         return True, ""
+    
+    @staticmethod
+    def generar_placa_automatica() -> str:
+        """Genera una placa aleatoria válida siguiendo el formato estatal (Ej: YAB-12-34)."""
+        # Prefijo fijo para el estado (Y de Yucatán) y dos letras aleatorias
+        letras = "Y" + "".join(random.choices(string.ascii_uppercase, k=2))
+        # Dos grupos de números
+        num1 = "".join(random.choices(string.digits, k=2))
+        num2 = "".join(random.choices(string.digits, k=2))
+        return f"{letras}-{num1}-{num2}"

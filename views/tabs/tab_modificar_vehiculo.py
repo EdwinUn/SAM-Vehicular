@@ -5,6 +5,8 @@ from PySide6.QtCore import Qt
 # Importaciones del backend
 import logic.catalogos as cat
 from logic.gestor_vehiculos import GestorVehiculos
+from logic.gestor_propietarios import GestorPropietarios
+from logic.validador import Validador
 
 # [REFACTORIZACIÓN]: Nombramos la clase específicamente para su función.
 # Hereda de QWidget, lo que la convierte en una pestaña autosuficiente.
@@ -126,45 +128,105 @@ class TabModificarVehiculo(QWidget):
     # MÉTODOS DE VENTANAS EMERGENTES (Trámites)
     # ==========================================
     def abrir_ventana_reemplacamiento(self):
-        """Ejecuta el trámite de cambio de placa pidiendo el nuevo dato."""
+        """Ejecuta el trámite sugiriendo una placa generada por el sistema."""
+        
+        if not self.mod_placa.text():
+            QMessageBox.warning(self, "Acción Inválida", "Primero debe buscar y cargar un vehículo.")
+            return
+
         vin = self.input_buscar_vin.text().strip().upper()
         
-        # Pedimos la nueva placa mediante un diálogo simple
+        # --- NUEVO: Generamos la placa sugerida ---
+        placa_sugerida = Validador.generar_placa_automatica()
+        
+        # 1. Pedimos la placa, pero ya le damos el valor generado como default
         nueva_placa, ok = QInputDialog.getText(
-            self, "Trámite de Reemplacamiento", 
-            f"Ingrese la nueva placa para el vehículo (VIN: {vin}):"
+            self, "Trámite Oficial de Reemplacamiento", 
+            f"VIN: {vin}\n\nEl sistema sugiere la siguiente placa disponible:",
+            QLineEdit.Normal,
+            placa_sugerida # <--- Aquí se le pasa la sugerencia
         )
         
         if ok and nueva_placa.strip():
-            exito, msj = GestorVehiculos.realizar_reemplacamiento(
-                vin, nueva_placa.strip().upper(), self.usuario_actual.id_usuario # <-- AÑADIDO
+            nueva_placa = nueva_placa.strip().upper()
+            
+            # Validamos (por si el usuario borró la sugerencia y escribió otra cosa)
+            es_valida, msj_error = Validador.validar_placa(nueva_placa)
+            if not es_valida:
+                QMessageBox.warning(self, "Formato Inválido", msj_error)
+                return
+
+            # 2. Confirmación final
+            confirmacion = QMessageBox.question(
+                self, "Confirmación de Trámite",
+                f"¿Desea asignar oficialmente la placa {nueva_placa} a este vehículo?\n\nEste movimiento es irreversible.",
+                QMessageBox.Yes | QMessageBox.No
             )
-            if exito:
-                QMessageBox.information(self, "Éxito", msj)
-                self.mod_placa.setText(nueva_placa.strip().upper())
-                # Actualizamos la vista
-            else:
-                QMessageBox.warning(self, "Trámite Denegado", msj)
+            
+            if confirmacion == QMessageBox.Yes:
+                # El gestor verifica que no esté duplicada en la base de datos
+                exito, msj = GestorVehiculos.realizar_reemplacamiento(
+                    vin, nueva_placa, self.usuario_actual.id_usuario
+                )
+                if exito:
+                    QMessageBox.information(self, "Éxito", "Trámite completado. Nueva placa asignada.")
+                    self.mod_placa.setText(nueva_placa)
+                else:
+                    QMessageBox.warning(self, "Error", msj)
 
     def abrir_ventana_cambio_propietario(self):
-        """Ejecuta la transferencia de propiedad pidiendo el ID del nuevo dueño."""
+        """Ejecuta la transferencia pidiendo la CURP en lugar de un ID interno."""
+        
+        # --- PROTECCIÓN: Verificar que haya un vehículo cargado ---
+        if not self.mod_placa.text():
+            QMessageBox.warning(self, "Acción Inválida", "Primero debe buscar y cargar un vehículo.")
+            return
+        # -----------------------------------------------------------
+
         vin = self.input_buscar_vin.text().strip().upper()
         
-        id_nuevo, ok = QInputDialog.getInt(
-            self, "Cambio de Propietario", 
-            "Ingrese el ID del nuevo propietario registrado:",
+        # 1. Pedimos un dato de la vida real (CURP)
+        curp, ok = QInputDialog.getText(
+            self, "Trámite: Transferencia de Propiedad", 
+            "Ingrese la CURP del NUEVO propietario registrado en el padrón:"
         )
         
-        if ok:
-            exito, msj = GestorVehiculos.transferir_propiedad(
-                vin, id_nuevo, self.usuario_actual.id_usuario # <-- AÑADIDO
-            )
+        if ok and curp.strip():
+            # 2. Buscamos al propietario con la función que ya tenías creada
+            exito, resultado = GestorPropietarios.buscar_propietario_por_curp(curp.strip().upper())
+            
             if exito:
-                QMessageBox.information(self, "Éxito", msj)
-                # Actualizamos el campo visual con el formato PRP-00000
-                self.mod_id_propietario.setText(f"PRP-{id_nuevo:05d}")
+                id_nuevo = resultado["id_propietario"]
+                nombre_completo = f"{resultado['nombres']} {resultado['apellido_paterno']} {resultado['apellido_materno']}".strip()
+                formato_prp = f"PRP-{id_nuevo:05d}"
+                
+                # 3. Toque realista: Mostramos una ficha formal para que el operador verifique
+                mensaje_confirmacion = (
+                    f"Se ha localizado al ciudadano en el padrón municipal:\n\n"
+                    f"Nombre: {nombre_completo}\n"
+                    f"Identificador: {formato_prp}\n"
+                    f"CURP: {resultado['curp']}\n\n"
+                    f"¿Autoriza la transferencia legal de este vehículo a su nombre?"
+                )
+                
+                confirmacion = QMessageBox.question(
+                    self, "Validación de Transferencia", mensaje_confirmacion,
+                    QMessageBox.Yes | QMessageBox.No
+                )
+                
+                if confirmacion == QMessageBox.Yes:
+                    exito_tramite, msj = GestorVehiculos.transferir_propiedad(
+                        vin, id_nuevo, self.usuario_actual.id_usuario
+                    )
+                    if exito_tramite:
+                        QMessageBox.information(self, "Trámite Aprobado", msj)
+                        # Se actualiza la caja de texto con el formato PRP oficial
+                        self.mod_id_propietario.setText(formato_prp)
+                    else:
+                        QMessageBox.warning(self, "Trámite Denegado", msj)
             else:
-                QMessageBox.warning(self, "Trámite Denegado", msj)
+                # Si el usuario pone una CURP que no existe
+                QMessageBox.warning(self, "Búsqueda Fallida", "La CURP ingresada no se encuentra registrada en el sistema. Primero debe dar de alta al propietario.")
     # ==========================================
     # MÉTODOS LÓGICOS (Búsqueda)
     # ==========================================

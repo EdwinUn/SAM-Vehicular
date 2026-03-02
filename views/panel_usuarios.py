@@ -1,9 +1,11 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
 QLineEdit, QPushButton, QComboBox, QTabWidget, 
 QFormLayout, QTableWidget, QTableWidgetItem, 
-QHeaderView, QMessageBox)
+QHeaderView, QMessageBox, QApplication)
 from PySide6.QtCore import Qt
 import logic.catalogos as cat
+import random
+import string
 
 # Importamos el backend
 from logic.auth import Auth
@@ -46,15 +48,11 @@ class PanelUsuarios(QWidget):
         self.input_nombre = QLineEdit()
         self.input_nombre.setPlaceholderText("Ej: operador_juan")
         
-        self.input_password = QLineEdit()
-        self.input_password.setPlaceholderText("Mínimo 6 caracteres")
-        self.input_password.setEchoMode(QLineEdit.Password) # Oculta los caracteres
-
         self.combo_rol = QComboBox()
         self.combo_rol.addItems(cat.ROLES_USUARIO)
 
         formulario.addRow("Nombre de Usuario:", self.input_nombre)
-        formulario.addRow("Contraseña:", self.input_password)
+        
         formulario.addRow("Rol en el sistema:", self.combo_rol)
 
         layout.addLayout(formulario)
@@ -100,11 +98,20 @@ class PanelUsuarios(QWidget):
         self.combo_edit_estado.addItems(["Activo", "Inactivo"])
         layout_edicion.addWidget(self.combo_edit_estado)
 
+        # --- BOTÓN DE ACTUALIZAR ---
         self.btn_actualizar = QPushButton("Aplicar Cambios")
         self.btn_actualizar.setStyleSheet("background-color: #2980b9; color: white; font-weight: bold; padding: 8px;")
         self.btn_actualizar.clicked.connect(self.procesar_actualizacion)
         self.btn_actualizar.setEnabled(False) # Se activa al seleccionar a alguien
         layout_edicion.addWidget(self.btn_actualizar)
+        
+        # --- BOTÓN DE RESTABLECER ---
+        self.btn_restablecer = QPushButton("Restablecer Contraseña")
+        self.btn_restablecer.setStyleSheet("background-color: #c0392b; color: white; font-weight: bold; padding: 8px;")
+        self.btn_restablecer.clicked.connect(self.procesar_restablecimiento)
+        self.btn_restablecer.setEnabled(False) # Se activa al seleccionar a alguien
+        layout_edicion.addWidget(self.btn_restablecer)
+        
         
         # ==========================================
         # MARCA DE AGUA DE AUDITORÍA
@@ -126,21 +133,38 @@ class PanelUsuarios(QWidget):
     # ==========================================
     def procesar_registro(self):
         nombre = self.input_nombre.text().strip()
-        password = self.input_password.text().strip()
         rol = self.combo_rol.currentText()
 
+        if not nombre:
+            QMessageBox.warning(self, "Datos Incompletos", "El nombre de usuario es obligatorio.")
+            return
+
+        # Generador de contraseña temporal (Ej. TMP-X8K9V)
+        caracteres = string.ascii_uppercase + string.digits
+        password_temporal = "TMP-" + "".join(random.choices(caracteres, k=5))
+
+        # Se registra el usuario. La BD automáticamente pondrá 'debe_cambiar_password' en 1
         nuevo_usuario = Usuario(nombre_usuario=nombre,
-                                password=password,
+                                password=password_temporal,
                                 rol=rol,
                                 id_usuario_registro=self.usuario_actual.id_usuario)
         
         exito, msj = Auth.registrar_usuario(nuevo_usuario)
 
         if exito:
-            QMessageBox.information(self, "Éxito", msj)
+            # Mostramos la contraseña temporal para que el Admin la anote y se la dé al empleado
+            mensaje_exito = (
+                f"{msj}\n\n"
+                f"La cuenta ha sido creada con éxito. Entregue estas credenciales al usuario:\n\n"
+                f"Usuario: {nombre}\n"
+                f"Contraseña Temporal: {password_temporal}\n\n"
+                f"NOTA: El sistema le exigirá cambiar esta contraseña en su primer inicio de sesión."
+            )
+            
+            QApplication.clipboard().setText(f"Tus credenciales de acceso:\nUsuario: {nombre}\nContraseña: {password_temporal}")
+            QMessageBox.information(self, "Cuenta Creada", mensaje_exito + "\n\n Las credenciales han sido copiadas al portapapeles. Puede pegarlas (Ctrl+V) para enviarlas al usuario.")
             self.input_nombre.clear()
-            self.input_password.clear()
-            self.cargar_lista_usuarios() # Refresca la tabla automáticamente
+            self.cargar_lista_usuarios() 
         else:
             QMessageBox.critical(self, "Error", msj)
 
@@ -181,7 +205,8 @@ class PanelUsuarios(QWidget):
             self.combo_edit_rol.setCurrentText(rol_actual)
             self.combo_edit_estado.setCurrentText(estado_actual)
             self.btn_actualizar.setEnabled(True)
-
+            self.btn_restablecer.setEnabled(True)
+            
     def procesar_actualizacion(self):
         texto_id = self.lbl_id_edit.text().replace("ID seleccionado: ", "")
         if texto_id == "-":
@@ -203,3 +228,46 @@ class PanelUsuarios(QWidget):
             self.lbl_auditoria.clear()
         else:
             QMessageBox.critical(self, "Error", msj)
+            
+    def procesar_restablecimiento(self):
+        # 1. Obtenemos el ID del usuario seleccionado
+        texto_id = self.lbl_id_edit.text().replace("ID seleccionado: ", "")
+        if texto_id == "-":
+            return
+            
+        id_usuario = int(texto_id)
+        
+        # 2. Extraemos el nombre de usuario desde la tabla (columna 1) para el mensaje
+        fila_seleccionada = self.tabla_usuarios.selectedItems()[0].row()
+        nombre_usuario = self.tabla_usuarios.item(fila_seleccionada, 1).text()
+
+        # 3. Preguntamos al administrador si está seguro (Doble confirmación)
+        respuesta = QMessageBox.question(
+            self, "Confirmar Restablecimiento", 
+            f"¿Está seguro que desea revocar el acceso actual y generar una nueva contraseña temporal para el usuario '{nombre_usuario}'?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+
+        if respuesta == QMessageBox.Yes:
+            # 4. Generamos la nueva contraseña (Ej. TMP-A1B2C)
+            caracteres = string.ascii_uppercase + string.digits
+            password_temporal = "TMP-" + "".join(random.choices(caracteres, k=5))
+            
+            # 5. Enviamos al backend
+            exito, msj = Auth.restablecer_password_temporal(id_usuario, password_temporal)
+            
+            if exito:
+                # 6. Copiamos al portapapeles y avisamos
+                QApplication.clipboard().setText(f"Nuevas credenciales de acceso:\nUsuario: {nombre_usuario}\nContraseña Temporal: {password_temporal}")
+                
+                QMessageBox.information(self, "Contraseña Restablecida", 
+                    f"Se ha generado una nueva clave para {nombre_usuario}.\n\n"
+                    f"Contraseña Temporal: {password_temporal}\n\n"
+                    f" Las credenciales han sido copiadas al portapapeles. Presione Ctrl+V para enviarlas al empleado.")
+                
+                # Deseleccionamos todo por seguridad
+                self.btn_actualizar.setEnabled(False)
+                self.btn_restablecer.setEnabled(False)
+                self.lbl_id_edit.setText("ID seleccionado: -")
+            else:
+                QMessageBox.critical(self, "Error", msj)
