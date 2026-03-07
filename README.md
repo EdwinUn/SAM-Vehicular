@@ -1,9 +1,6 @@
 # SAM-Vehicular
 
 Sistema de escritorio para la administración del padrón vehicular, registro de propietarios y control de infracciones de tránsito de un municipio. Desarrollado con arquitectura MVC, auditoría mediante triggers de base de datos y control de acceso por roles.
-
-> **Estado:** Proyecto archivado. Se mantiene público únicamente con fines de portafolio. No se brinda soporte ni se aceptan contribuciones.
-
 ---
 
 ## Características
