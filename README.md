@@ -1,78 +1,73 @@
-# SAM-Vehicular 🚗⚖️
-### Sistema Administrativo Municipal de Control Vehicular e Infracciones
+# SAM-Vehicular
 
-**SAM-Vehicular** es una solución de escritorio robusta diseñada para la gestión integral del padrón vehicular, registro de propietarios y control de infracciones de tránsito. El sistema destaca por su arquitectura **MVC (Modelo-Vista-Controlador)**, un sistema de auditoría interna basado en *triggers* de base de datos y una estricta segregación de funciones por roles.
+Sistema de escritorio para la administración del padrón vehicular, registro de propietarios y control de infracciones de tránsito de un municipio. Desarrollado con arquitectura MVC, auditoría mediante triggers de base de datos y control de acceso por roles.
 
-> **Nota de Estado:** Este proyecto se encuentra actualmente en estado **Archivado**. Se mantiene público exclusivamente con fines de portafolio académico y profesional; no se aceptarán nuevas actualizaciones ni se brinda soporte técnico.
-
----
-
-## ✨ Características Técnicas
-
-* **Arquitectura Profesional:** Separación clara entre modelos de datos (`models/`), lógica de negocio (`logic/`) e interfaces gráficas (`views/`).
-* **Control de Acceso Basado en Roles (RBAC):** Restricción modular según el perfil del usuario: Administrador, Operador Administrativo, Agente de Tránsito y Supervisor.
-* **Auditoría de "Caja Negra":** Registro automático de cada inserción o modificación mediante disparadores SQL que capturan el usuario, la fecha y el detalle de los cambios.
-* **Validaciones Biunívocas:** Reglas estrictas para formatos de VIN (17 caracteres), CURP, placas estatales y números de placa de agentes.
-* **Interfaz Moderna:** Diseño en **Modo Oscuro** desarrollado con PySide6 y hojas de estilo QSS personalizadas.
+> **Estado:** Proyecto archivado. Se mantiene público únicamente con fines de portafolio. No se brinda soporte ni se aceptan contribuciones.
 
 ---
 
-## 🛠️ Stack Tecnológico
+## Características
 
-* **Lenguaje:** Python 3.10+.
-* **GUI:** PySide6 (Qt for Python).
-* **Base de Datos:** SQLite3 con soporte para integridad referencial.
-* **Seguridad:** Encriptación de contraseñas mediante SHA-256.
+- **Arquitectura MVC:** Separación entre modelos (`models/`), lógica de negocio (`logic/`) e interfaces gráficas (`views/`).
+- **Control de acceso por roles (RBAC):** Cuatro perfiles: Administrador, Operador Administrativo, Agente de Tránsito y Supervisor.
+- **Auditoría automática:** Triggers SQL registran cada inserción o modificación con usuario, fecha y detalle del cambio.
+- **Validaciones de formato:** VIN (17 caracteres), CURP, placas estatales y número de placa de agentes.
+- **Interfaz en modo oscuro:** Construida con PySide6 y hojas de estilo QSS.
 
 ---
 
-## 🔑 Credenciales de Acceso (Demo)
+## Stack
 
-El sistema cuenta con perfiles preconfigurados en el script de semillas (`semilla_datos.py`):
+| Componente | Tecnología |
+| :--- | :--- |
+| Lenguaje | Python 3.10+ |
+| GUI | PySide6 (Qt for Python) |
+| Base de datos | SQLite3 |
+| Seguridad | Hashing SHA-256 |
 
-| Rol | Usuario | Contraseña | Capacidades |
+---
+
+## Instalación
+```bash
+python -m venv venv && source venv/bin/activate  # En Windows: venv\Scripts\activate
+pip install PySide6
+python semilla_datos.py   # Crea la base de datos y carga datos de prueba
+python main.py
+```
+
+---
+
+## Credenciales de demo
+
+Definidas en `semilla_datos.py`.
+
+| Rol | Usuario | Contraseña | Acceso |
 | :--- | :--- | :--- | :--- |
-| **Administrador** | `admin_central` | `admin123` | Gestión de usuarios, agentes y auditoría completa. |
-| **Operador** | `operador_1` | `operador123` | Alta de vehículos, propietarios y trámites. |
-| **Agente** | `agente_007` | `agente123` | Registro de infracciones en sitio o fotomultas. |
-| **Supervisor** | `supervisor_general`| `super123` | Cobro/cancelación de multas y reportes. |
+| Administrador | `admin_central` | `admin123` | Usuarios, agentes y auditoría |
+| Operador | `operador_1` | `operador123` | Vehículos, propietarios y trámites |
+| Agente | `agente_007` | `agente123` | Registro de infracciones |
+| Supervisor | `supervisor_general` | `super123` | Cobro, cancelación y reportes |
 
 ---
 
-## ⚖️ Reglas de Negocio Implementadas
+## Reglas de negocio
 
-1.  **Bloqueo por Adeudos:** No se permiten trámites de reemplacamiento o transferencia de propiedad si existen infracciones "Pendientes".
-2.  **Inmutabilidad:** Atributos estructurales (VIN, Marca, Modelo, Año) son inmutables tras el registro.
-3.  **Seguridad:** Usuarios con claves temporales deben cambiarlas en su primer inicio de sesión.
-4.  **Tabulador Oficial:** Las multas deben respetar los rangos mínimos y máximos legales definidos en el catálogo.
-
----
-
-## 🚀 Futuras Mejoras (Roadmap)
-
-A pesar de ser un proyecto finalizado, se identifican las siguientes áreas de crecimiento técnico:
-* **Seguridad Avanzada:** Implementación de *Salt* aleatorio para hasheo y gestión de sesiones con tokens.
-* **Base de Datos Relacional:** Migración a PostgreSQL para soportar concurrencia real en red.
-* **Módulo de Pagos:** Integración con pasarelas de pago para multas en línea.
-* **Notificaciones:** Envío automatizado de boletas de infracción vía SMTP o SMS.
+- Los trámites de reemplacamiento o transferencia quedan bloqueados si existen infracciones pendientes.
+- VIN, marca, modelo y año son inmutables tras el registro inicial.
+- Usuarios con contraseña temporal deben cambiarla en el primer inicio de sesión.
+- Los montos de multa deben respetar los rangos del catálogo oficial.
 
 ---
 
-## 🤖 Declaración de Uso de IA
+## Mejoras identificadas
 
-Este proyecto fue desarrollado utilizando herramientas de **Inteligencia Artificial** como asistentes de programación. La IA intervino en:
-* Generación de estructuras base para la interfaz gráfica (PySide6).
-* Optimización de consultas SQL y lógica de triggers de auditoría.
-* Refactorización de código para cumplimiento de patrones de diseño.
-* Redacción de documentación técnica.
-
-*La lógica de negocio, la arquitectura del sistema y la supervisión técnica fueron validadas y corregidas integralmente por el autor.*
+- Hasheo con salt aleatorio y gestión de sesiones con tokens.
+- Migración a PostgreSQL para concurrencia en red.
+- Integración con pasarelas de pago.
+- Envío de boletas por correo (SMTP).
 
 ---
 
-## 📦 Instalación
+## Uso de IA
 
-1.  **Configurar entorno:** `python -m venv venv` y activar.
-2.  **Dependencias:** `pip install PySide6`.
-3.  **Inicializar:** `python semilla_datos.py` (Crea la DB y simula trámites).
-4.  **Ejecutar:** `python main.py`.
+El proyecto utilizó asistentes de IA para la generación de estructuras base de la interfaz, optimización de consultas SQL y documentación. La lógica de negocio, la arquitectura y la supervisión técnica fueron responsabilidad del autor.
